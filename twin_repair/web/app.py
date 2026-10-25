@@ -383,12 +383,31 @@ class TwinRepairWebState:
             self.runs[showcase_id] = {
                 "run_id": showcase_id,
                 "case_id": case_id,
-                "mode": "mock",
+                "mode": str(card.get("provider_mode", "mock")),
                 "status": "COMPLETED",
                 "stage": "completed",
                 "elapsed_s": float(card.get("total_elapsed_s", 1.23)),
                 "result": card,
             }
+
+        for sub in sorted(self.runs_root.iterdir()):
+            if not sub.is_dir() or sub.name in self.runs or sub.name in ("fixtures", "preflight"):
+                continue
+            rp = sub / "result_public.json"
+            if rp.is_file():
+                try:
+                    card = json.loads(rp.read_text(encoding="utf-8"))
+                    self.runs[sub.name] = {
+                        "run_id": sub.name,
+                        "case_id": str(card.get("case_id", "drift_A_to_B")),
+                        "mode": str(card.get("provider_mode", "mock")),
+                        "status": "COMPLETED",
+                        "stage": "completed",
+                        "elapsed_s": float(card.get("total_elapsed_s", 1.0)),
+                        "result": card,
+                    }
+                except Exception:
+                    pass
 
 
 def _is_valid_judge_code(provided_code: Optional[str]) -> bool:
@@ -663,6 +682,8 @@ def create_app(
             )
 
         asset_path = (run_dir / raw_asset).resolve()
+        if not asset_path.is_file() and (run_dir / "public" / raw_asset).is_file():
+            asset_path = (run_dir / "public" / raw_asset).resolve()
         try:
             asset_path.relative_to(run_dir)
         except ValueError:
