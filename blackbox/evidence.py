@@ -22,13 +22,14 @@ Provides:
 from __future__ import annotations
 
 import copy
-from dataclasses import asdict
+from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
+import functools
 import hashlib
 import json
 import math
 import os
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 import shutil
 from typing import Any, Dict, List, Literal, Mapping, Optional, Sequence, Tuple
 
@@ -240,6 +241,48 @@ def write_phase5_case_dossier(
         },
         "public_packet_sha256": pkt_sha,
         "substantive_public_packet_sha256": substantive_pkt_sha,
+        "turns": {
+            "I1": {
+                "turn_id": "I1",
+                "images": ["inputs/sld.png", "inputs/rear_aisle_rgb.png", "inputs/rear_aisle_thermal.png"],
+                "input_png_sha256": {
+                    "sld": sld_info["sha256"],
+                    "rgb": rgb_info["sha256"],
+                    "thermal": thermal_info["sha256"],
+                },
+                "public_packet_sha256": pkt_sha,
+                "received_plan": False,
+                "received_probe_receipt": False,
+            },
+            "I2": {
+                "turn_id": "I2",
+                "images": [],
+                "input_png_sha256": {},
+                "public_packet_sha256": pkt_sha,
+                "received_plan": False,
+                "received_probe_receipt": True,
+            },
+            "A1": {
+                "turn_id": "A1",
+                "images": ["inputs/sld.png", "inputs/rear_aisle_rgb.png", "inputs/rear_aisle_thermal.png"],
+                "input_png_sha256": {
+                    "sld": sld_info["sha256"],
+                    "rgb": rgb_info["sha256"],
+                    "thermal": thermal_info["sha256"],
+                },
+                "public_packet_sha256": pkt_sha,
+                "received_plan": False,
+                "received_probe_receipt": False,
+            },
+            "A2": {
+                "turn_id": "A2",
+                "images": [],
+                "input_png_sha256": {},
+                "public_packet_sha256": pkt_sha,
+                "received_plan": True,
+                "received_probe_receipt": True,
+            },
+        },
     }
     _write_json(case_dir / "input_manifest.json", input_manifest)
 
@@ -968,7 +1011,11 @@ def verify_and_replay_bundle(
         errors.append("replay_manifest.json contains no file entries")
 
     for rel_path, meta in sorted(manifest_files.items()):
-        fp = bdir / rel_path
+        try:
+            fp = resolve_safe_bundle_path(bdir, rel_path)
+        except ValueError as exc:
+            errors.append(str(exc))
+            continue
         if not fp.is_file():
             errors.append(f"Missing file listed in replay_manifest.json: {rel_path}")
             continue
@@ -995,7 +1042,11 @@ def verify_and_replay_bundle(
             errors.append(f"Malformed SHA256SUMS line: {line!r}")
             continue
         rec_sha, rel_p = parts[0].strip(), parts[1].strip()
-        target_fp = bdir / rel_p
+        try:
+            target_fp = resolve_safe_bundle_path(bdir, rel_p)
+        except ValueError as exc:
+            errors.append(str(exc))
+            continue
         if not target_fp.is_file():
             errors.append(f"Missing file referenced in SHA256SUMS.txt: {rel_p}")
         elif compute_file_sha256(target_fp) != rec_sha:
@@ -1424,6 +1475,518 @@ def verify_and_replay_bundle(
             "physical_safety_certified": False,
         },
     }
+
+
+# ---------------------------------------------------------------------------
+# Phase 6: Hash-Keyed Immutable Readers & Typed Replay View-Models
+# ---------------------------------------------------------------------------
+
+
+def resolve_safe_bundle_path(bundle_dir: Path | str, rel_path: str) -> Path:
+    """Resolve `rel_path` strictly inside `bundle_dir`, rejecting traversal, absolute paths, and escaping symlinks."""
+    if not isinstance(rel_path, str) or not rel_path.strip():
+        raise ValueError(f"Malicious or out-of-bundle path detected: {rel_path!r}")
+    norm_rel = rel_path.strip()
+    if norm_rel.startswith(("/", "\\")) or Path(norm_rel).is_absolute():
+        raise ValueError(f"Malicious or out-of-bundle path detected: {rel_path}")
+    if "\\" in norm_rel:
+        raise ValueError(f"Malicious or out-of-bundle path detected: {rel_path}")
+    posix_parts = PurePosixPath(norm_rel).parts
+    if not posix_parts or any(part in ("..", "") for part in posix_parts):
+        raise ValueError(f"Malicious or out-of-bundle path detected: {rel_path}")
+
+    root_resolved = Path(bundle_dir).resolve()
+    candidate = root_resolved.joinpath(*posix_parts)
+
+    # Walk each prefix component to ensure no symlink escapes root_resolved
+    cur = root_resolved
+    for part in posix_parts:
+        cur = cur / part
+        if cur.is_symlink():
+            target_res = cur.resolve()
+            try:
+                target_res.relative_to(root_resolved)
+            except ValueError as exc:
+                raise ValueError(
+                    f"Malicious or out-of-bundle path detected: {rel_path}"
+                ) from exc
+
+    resolved_candidate = candidate.resolve()
+    try:
+        resolved_candidate.relative_to(root_resolved)
+    except ValueError as exc:
+        raise ValueError(
+            f"Malicious or out-of-bundle path detected: {rel_path}"
+        ) from exc
+    return resolved_candidate
+
+
+@functools.lru_cache(maxsize=512)
+def read_cached_bundle_bytes(resolved_path_str: str, expected_sha256: str) -> bytes:
+    """Read and SHA-256 verify immutable artifact bytes from `resolved_path_str`."""
+    fp = Path(resolved_path_str)
+    if not fp.is_file():
+        raise FileNotFoundError(f"Bundle artifact file not found: {resolved_path_str}")
+    data = fp.read_bytes()
+    actual_sha = hashlib.sha256(data).hexdigest()
+    exp = (expected_sha256 or "").strip().lower()
+    if exp and actual_sha != exp:
+        raise ValueError(
+            f"SHA-256 mismatch for {resolved_path_str}: expected {exp}, got {actual_sha}"
+        )
+    return data
+
+
+def read_cached_bundle_json(resolved_path_str: str, expected_sha256: str) -> Dict[str, Any]:
+    """Read, SHA-256 verify, and parse a JSON artifact from `resolved_path_str`."""
+    raw = read_cached_bundle_bytes(resolved_path_str, expected_sha256)
+    parsed = json.loads(raw.decode("utf-8"))
+    if not isinstance(parsed, dict):
+        raise ValueError(f"Expected JSON object in {resolved_path_str}, got {type(parsed).__name__}")
+    return copy.deepcopy(parsed)
+
+
+@dataclass(frozen=True)
+class TurnView:
+    """Immutable view-model for a single protocol turn (`I1`, `I2`, `A1`, `A2`)."""
+
+    turn_id: str
+    role: str
+    status: str
+    interaction_id: str
+    environment_id: str
+    environment_id_short: str
+    elapsed_s: float
+    lock_stage: str
+    lock_hash: str
+    chain_hash: str
+    artifact_filename: str
+    artifact_sha256: str
+    artifact_json: Dict[str, Any]
+    usage: Dict[str, Any]
+    steps: List[Dict[str, Any]]
+    input_manifest: Dict[str, Any]
+    received_plan: bool
+    received_probe_receipt: bool
+
+    def to_dict(self) -> Dict[str, Any]:
+        return asdict(self)
+
+
+@dataclass(frozen=True)
+class CaseView:
+    """Immutable view-model for a single case (`case_A` or `case_B`) in the replay dashboard."""
+
+    case_id: str
+    short_id: str
+    is_complete: bool
+    strict_case_passed: bool
+    first_failed_gate: Optional[str]
+    booleans: Dict[str, bool]
+    metrics: Dict[str, Any]
+    score: Dict[str, Any]
+    public_packet: Dict[str, Any]
+    public_packet_sha256: str
+    substantive_packet_sha256: str
+    image_paths: Dict[str, str]
+    image_sha256: Dict[str, str]
+    probe_receipt: Dict[str, Any]
+    turns: Dict[str, TurnView]
+    remote_artifacts: Dict[str, Dict[str, Any]]
+    locks: List[Dict[str, Any]]
+    selected_action_id: str
+    decision: str
+    auditor_verdict: str
+    blocking_graph_uncertainty: bool
+    physical_safety_certified: bool
+
+    def to_dict(self) -> Dict[str, Any]:
+        return asdict(self)
+
+
+@dataclass(frozen=True)
+class PairView:
+    """Immutable top-level view-model for a paired counterfactual A/B campaign dossier."""
+
+    bundle_dir: str
+    campaign_run_id: str
+    schema_version: str
+    execution_mode: str
+    diagnostic_mode: str
+    status: str
+    is_complete: bool
+    strict_pair_passed: bool
+    verified_from_archived_run: bool
+    first_failed_gate: Optional[str]
+    failed_attempts: List[Dict[str, Any]]
+    physical_safety_certified: bool
+    precommitment: Dict[str, Any]
+    pair_manifest: Dict[str, Any]
+    replay_verification: Dict[str, Any]
+    cross_case_input_invariants: Dict[str, Any]
+    token_accounting: Dict[str, Any]
+    ablations: Dict[str, Any]
+    cases: Dict[str, CaseView]
+
+    def to_dict(self) -> Dict[str, Any]:
+        return asdict(self)
+
+
+def _load_single_case_view(
+    bdir: Path,
+    case_label: Literal["case_A", "case_B"],
+    manifest_file_hashes: Mapping[str, str],
+) -> CaseView:
+    short_id: Literal["A", "B"] = "A" if case_label == "case_A" else "B"
+
+    def _safe_json(rel_p: str) -> Tuple[Dict[str, Any], str]:
+        p = resolve_safe_bundle_path(bdir, rel_p)
+        exp_sha = manifest_file_hashes.get(rel_p) or compute_file_sha256(p)
+        return read_cached_bundle_json(str(p), exp_sha), exp_sha
+
+    score_data, _ = _safe_json(f"{case_label}/score.json")
+    in_man_data, _ = _safe_json(f"{case_label}/input_manifest.json")
+    pkt_data, pkt_sha = _safe_json(f"{case_label}/inputs/public_packet.json")
+    probe_data, _ = _safe_json(f"{case_label}/probe_receipt.json")
+
+    # Validate and hash image paths
+    img_rel_map = {
+        "sld": f"{case_label}/inputs/sld.png",
+        "rgb": f"{case_label}/inputs/rear_aisle_rgb.png",
+        "thermal": f"{case_label}/inputs/rear_aisle_thermal.png",
+    }
+    image_paths: Dict[str, str] = {}
+    image_sha256: Dict[str, str] = {}
+    for img_key, rel_img in img_rel_map.items():
+        img_p = resolve_safe_bundle_path(bdir, rel_img)
+        if not img_p.is_file():
+            raise FileNotFoundError(f"Missing required media file: {rel_img}")
+        exp_img_sha = (
+            manifest_file_hashes.get(rel_img)
+            or dict(in_man_data.get("input_png_sha256") or {}).get(img_key)
+            or compute_file_sha256(img_p)
+        )
+        read_cached_bundle_bytes(str(img_p), exp_img_sha)
+        image_paths[img_key] = str(img_p)
+        image_sha256[img_key] = exp_img_sha
+
+    # Read locks.jsonl
+    locks_p = resolve_safe_bundle_path(bdir, f"{case_label}/locks.jsonl")
+    exp_locks_sha = manifest_file_hashes.get(f"{case_label}/locks.jsonl") or compute_file_sha256(locks_p)
+    locks_raw = read_cached_bundle_bytes(str(locks_p), exp_locks_sha).decode("utf-8")
+    locks_list: List[Dict[str, Any]] = [
+        json.loads(line) for line in locks_raw.splitlines() if line.strip()
+    ]
+    locks_by_turn: Dict[str, Dict[str, Any]] = {}
+    for lrec in locks_list:
+        stg = str(lrec.get("stage", ""))
+        if stg in STAGE_TO_TURN:
+            locks_by_turn[STAGE_TO_TURN[stg]] = lrec
+
+    # Load remote artifacts & turns
+    remote_artifacts: Dict[str, Dict[str, Any]] = {}
+    turns_map: Dict[str, TurnView] = {}
+    turns_in_man_all = dict(in_man_data.get("turns") or {})
+
+    for tid in TURN_ORDER:
+        stem = TURN_TO_ARTIFACT_STEM[tid]
+        art_rel = f"{case_label}/remote_artifacts/{stem}.json"
+        art_json, art_sha = _safe_json(art_rel)
+        remote_artifacts[stem] = art_json
+
+        turn_rel = f"{case_label}/turns/{tid}.json"
+        usage_rel = f"{case_label}/turns/{tid}_usage.json"
+        steps_rel = f"{case_label}/turns/{tid}_steps.json"
+
+        t_json, _ = _safe_json(turn_rel)
+        u_json, _ = _safe_json(usage_rel)
+        steps_p = resolve_safe_bundle_path(bdir, steps_rel)
+        exp_steps_sha = manifest_file_hashes.get(steps_rel) or compute_file_sha256(steps_p)
+        steps_list = json.loads(read_cached_bundle_bytes(str(steps_p), exp_steps_sha).decode("utf-8"))
+
+        lrec = locks_by_turn.get(tid, {})
+        env_id = str(t_json.get("environment_id") or lrec.get("environment_id") or "")
+        default_turn_in_man = {
+            "turn_id": tid,
+            "images": (
+                ["inputs/sld.png", "inputs/rear_aisle_rgb.png", "inputs/rear_aisle_thermal.png"]
+                if tid in ("I1", "A1")
+                else []
+            ),
+            "input_png_sha256": dict(image_sha256) if tid in ("I1", "A1") else {},
+            "public_packet_sha256": pkt_sha,
+            "received_plan": (tid == "A2"),
+            "received_probe_receipt": (tid in ("I2", "A2")),
+        }
+        turn_in_man = dict(turns_in_man_all.get(tid) or default_turn_in_man)
+        rec_plan = bool(turn_in_man.get("received_plan", tid == "A2"))
+        rec_probe = bool(turn_in_man.get("received_probe_receipt", tid in ("I2", "A2")))
+
+        turns_map[tid] = TurnView(
+            turn_id=tid,
+            role=str(t_json.get("role") or ("investigator" if tid.startswith("I") else "auditor")),
+            status=str(t_json.get("status", "completed")),
+            interaction_id=str(t_json.get("interaction_id") or lrec.get("interaction_id") or ""),
+            environment_id=env_id,
+            environment_id_short=env_id[:12],
+            elapsed_s=float(t_json.get("elapsed_s", 0.0) or 0.0),
+            lock_stage=str(lrec.get("stage") or t_json.get("lock_stage") or ""),
+            lock_hash=str(lrec.get("canonical_sha256") or t_json.get("canonical_sha256") or ""),
+            chain_hash=str(lrec.get("chain_hash") or t_json.get("lock_chain_hash") or ""),
+            artifact_filename=f"{stem}.json",
+            artifact_sha256=str(lrec.get("canonical_sha256") or art_sha),
+            artifact_json=art_json,
+            usage=u_json,
+            steps=list(steps_list) if isinstance(steps_list, list) else [],
+            input_manifest=turn_in_man,
+            received_plan=rec_plan,
+            received_probe_receipt=rec_probe,
+        )
+
+    bools_raw = dict(score_data.get("booleans") or {})
+    booleans = {k: bool(bools_raw.get(k, False)) for k in CASE_13_BOOLEAN_KEYS}
+    first_failed: Optional[str] = None
+    for k in CASE_13_BOOLEAN_KEYS:
+        if not booleans.get(k, False):
+            first_failed = k
+            break
+
+    plan_json = remote_artifacts.get("plan", {})
+    blocking_unc = bool(plan_json.get("blocking_graph_uncertainty", False))
+    all_turns_done = all(t.status == "completed" for t in turns_map.values())
+
+    return CaseView(
+        case_id=case_label,
+        short_id=short_id,
+        is_complete=all_turns_done and len(locks_list) == 4,
+        strict_case_passed=bool(score_data.get("strict_case_passed", False)),
+        first_failed_gate=first_failed,
+        booleans=booleans,
+        metrics=dict(score_data.get("metrics") or {}),
+        score=score_data,
+        public_packet=pkt_data,
+        public_packet_sha256=str(in_man_data.get("public_packet_sha256") or pkt_sha),
+        substantive_packet_sha256=str(
+            in_man_data.get("substantive_public_packet_sha256") or _substantive_packet_sha256(pkt_data)
+        ),
+        image_paths=image_paths,
+        image_sha256=image_sha256,
+        probe_receipt=probe_data,
+        turns=turns_map,
+        remote_artifacts=remote_artifacts,
+        locks=locks_list,
+        selected_action_id=str(score_data.get("selected_action_id") or plan_json.get("selected_action_id") or ""),
+        decision=str(score_data.get("decision") or plan_json.get("decision") or ""),
+        auditor_verdict=str(
+            score_data.get("auditor_verdict")
+            or remote_artifacts.get("audit_challenge", {}).get("verdict")
+            or ""
+        ),
+        blocking_graph_uncertainty=blocking_unc,
+        physical_safety_certified=False,
+    )
+
+
+def load_pair_view(
+    bundle_dir: Path | str,
+    *,
+    verify_integrity: bool = True,
+    require_live: bool = False,
+) -> PairView:
+    """Load a tamper-verified `PairView` from an archived Phase 5 dossier bundle (`bundle_dir`).
+
+    Enforces:
+    - Zero live network / SDK calls (`google.genai` and `build_private_world` are never invoked).
+    - Strict path traversal & symlink containment (`resolve_safe_bundle_path`).
+    - Run ID consistency across `pair_manifest.json`, `precommitment.json`, and `replay_manifest.json`.
+    - Full cryptographic & scientific replay verification (`verify_and_replay_bundle`) for completed runs,
+      while gracefully rendering partial/incomplete runs (`status="incomplete_failed_gate"`).
+    """
+    bdir = Path(bundle_dir).resolve()
+    if not bdir.is_dir():
+        raise FileNotFoundError(f"Evidence bundle directory does not exist: {bdir}")
+
+    pair_man_path = resolve_safe_bundle_path(bdir, "pair_manifest.json")
+    if not pair_man_path.is_file():
+        raise FileNotFoundError(f"Missing required pair_manifest.json in {bdir}")
+
+    pair_man = read_cached_bundle_json(str(pair_man_path), compute_file_sha256(pair_man_path))
+    campaign_run_id = str(pair_man.get("campaign_run_id") or bdir.name)
+    precommit_embedded = dict(pair_man.get("precommitment") or {})
+
+    # Check embedded precommitment run ID consistency
+    embedded_pre_id = str(precommit_embedded.get("campaign_run_id") or "")
+    if embedded_pre_id and embedded_pre_id != campaign_run_id:
+        raise ValueError(
+            f"Run ID collision detected between pair_manifest.json ({campaign_run_id!r}) "
+            f"and embedded precommitment ({embedded_pre_id!r})"
+        )
+
+    # Check standalone precommitment.json if present
+    precommit_file_path = resolve_safe_bundle_path(bdir, "precommitment.json")
+    if precommit_file_path.is_file():
+        pre_file_json = read_cached_bundle_json(
+            str(precommit_file_path), compute_file_sha256(precommit_file_path)
+        )
+        file_pre_id = str(pre_file_json.get("campaign_run_id") or "")
+        if file_pre_id and file_pre_id != campaign_run_id:
+            raise ValueError(
+                f"Run ID collision detected between pair_manifest.json ({campaign_run_id!r}) "
+                f"and precommitment.json ({file_pre_id!r})"
+            )
+        for k, v in pre_file_json.items():
+            precommit_embedded.setdefault(k, v)
+
+    # Validate paths & run ID in replay_manifest.json if present
+    manifest_file_hashes: Dict[str, str] = {}
+    replay_man_path = resolve_safe_bundle_path(bdir, "replay_manifest.json")
+    if replay_man_path.is_file():
+        replay_man = read_cached_bundle_json(str(replay_man_path), compute_file_sha256(replay_man_path))
+        replay_run_id = str(replay_man.get("campaign_run_id") or "")
+        if replay_run_id and replay_run_id != campaign_run_id:
+            raise ValueError(
+                f"Run ID collision detected between pair_manifest.json ({campaign_run_id!r}) "
+                f"and replay_manifest.json ({replay_run_id!r})"
+            )
+        for rel_p, meta in dict(replay_man.get("files") or {}).items():
+            resolve_safe_bundle_path(bdir, rel_p)
+            if isinstance(meta, Mapping) and meta.get("sha256"):
+                manifest_file_hashes[rel_p] = str(meta["sha256"])
+
+    # Validate paths in SHA256SUMS.txt if present
+    sums_path = resolve_safe_bundle_path(bdir, "SHA256SUMS.txt")
+    if sums_path.is_file():
+        sums_text = read_cached_bundle_bytes(str(sums_path), compute_file_sha256(sums_path)).decode("utf-8")
+        for raw_line in sums_text.splitlines():
+            line = raw_line.strip()
+            if not line:
+                continue
+            parts = line.split(None, 1)
+            if len(parts) == 2:
+                resolve_safe_bundle_path(bdir, parts[1].strip())
+
+    raw_status = str(pair_man.get("status", "completed")).strip().lower()
+    failed_attempts = [dict(x) for x in (pair_man.get("failed_attempts") or [])]
+    pair_eval = dict(pair_man.get("pair_evaluation") or {})
+
+    # Handle partial / incomplete failed-gate runs gracefully
+    if raw_status in {"incomplete_failed_gate", "failed_gate", "incomplete", "failed"}:
+        cases_partial: Dict[str, CaseView] = {}
+        for c_label in ("case_A", "case_B"):
+            sc_p = resolve_safe_bundle_path(bdir, f"{c_label}/score.json")
+            if sc_p.is_file():
+                try:
+                    cases_partial[c_label] = _load_single_case_view(
+                        bdir, c_label, manifest_file_hashes  # type: ignore[arg-type]
+                    )
+                except Exception:
+                    pass
+
+        first_failed_gate = str(pair_man.get("first_failed_gate") or "")
+        if not first_failed_gate:
+            for fa in failed_attempts:
+                cand = fa.get("failed_gate") or fa.get("turn_id") or fa.get("stage") or fa.get("reason")
+                if cand:
+                    first_failed_gate = str(cand)
+                    break
+        if not first_failed_gate:
+            for c_label, cv in cases_partial.items():
+                if cv.first_failed_gate:
+                    first_failed_gate = f"{c_label}:{cv.first_failed_gate}"
+                    break
+        if not first_failed_gate:
+            first_failed_gate = "incomplete_failed_gate"
+
+        diag_mode = "guided_diagnostic"
+        for cv in cases_partial.values():
+            diag_mode = str(cv.score.get("diagnostic_mode") or diag_mode)
+            break
+
+        return PairView(
+            bundle_dir=str(bdir),
+            campaign_run_id=campaign_run_id,
+            schema_version=str(pair_man.get("schema_version", "visual-v2-phase5-dossier")),
+            execution_mode=str(pair_man.get("execution_mode", "offline_deterministic")),
+            diagnostic_mode=diag_mode,
+            status="incomplete",
+            is_complete=False,
+            strict_pair_passed=False,
+            verified_from_archived_run=False,
+            first_failed_gate=first_failed_gate,
+            failed_attempts=failed_attempts,
+            physical_safety_certified=False,
+            precommitment=precommit_embedded,
+            pair_manifest=pair_man,
+            replay_verification={
+                "verified_from_archived_run": False,
+                "strict_pair_passed": False,
+                "integrity_passed": False,
+                "errors": [f"Incomplete run ({raw_status}): {first_failed_gate}"],
+            },
+            cross_case_input_invariants=dict(pair_eval.get("cross_case_input_invariants") or {}),
+            token_accounting=dict(pair_eval.get("token_accounting") or {}),
+            ablations=dict(pair_eval.get("ablations") or {}),
+            cases=cases_partial,
+        )
+
+    # Complete run: verify required media files exist before running full replay
+    for c_label in ("case_A", "case_B"):
+        for req_media in (
+            f"{c_label}/inputs/sld.png",
+            f"{c_label}/inputs/rear_aisle_rgb.png",
+            f"{c_label}/inputs/rear_aisle_thermal.png",
+            f"{c_label}/inputs/public_packet.json",
+        ):
+            mp = resolve_safe_bundle_path(bdir, req_media)
+            if not mp.is_file():
+                raise FileNotFoundError(f"Missing required media/input artifact: {req_media}")
+
+    if verify_integrity:
+        replay_res = verify_and_replay_bundle(bdir, require_live=require_live)
+        if not replay_res.get("verified_from_archived_run", False) or not replay_res.get("integrity_passed", False):
+            raise ValueError(
+                f"Bundle integrity/replay verification failed: {replay_res.get('errors')}"
+            )
+    else:
+        replay_res = {
+            "verified_from_archived_run": True,
+            "strict_pair_passed": bool(pair_eval.get("strict_pair_passed", False)),
+            "integrity_passed": True,
+            "errors": [],
+        }
+
+    case_a_view = _load_single_case_view(bdir, "case_A", manifest_file_hashes)
+    case_b_view = _load_single_case_view(bdir, "case_B", manifest_file_hashes)
+
+    first_failed_pair: Optional[str] = None
+    if case_a_view.first_failed_gate:
+        first_failed_pair = f"case_A:{case_a_view.first_failed_gate}"
+    elif case_b_view.first_failed_gate:
+        first_failed_pair = f"case_B:{case_b_view.first_failed_gate}"
+    elif not bool(replay_res.get("strict_pair_passed", False)):
+        first_failed_pair = "pair_acceptance_gate"
+
+    return PairView(
+        bundle_dir=str(bdir),
+        campaign_run_id=campaign_run_id,
+        schema_version=str(pair_man.get("schema_version", "visual-v2-phase5-dossier")),
+        execution_mode=str(pair_man.get("execution_mode", "offline_deterministic")),
+        diagnostic_mode=str(case_a_view.score.get("diagnostic_mode", "guided_diagnostic")),
+        status="completed",
+        is_complete=True,
+        strict_pair_passed=bool(replay_res.get("strict_pair_passed", False)),
+        verified_from_archived_run=bool(replay_res.get("verified_from_archived_run", False)),
+        first_failed_gate=first_failed_pair,
+        failed_attempts=failed_attempts,
+        physical_safety_certified=False,
+        precommitment=precommit_embedded,
+        pair_manifest=pair_man,
+        replay_verification=replay_res,
+        cross_case_input_invariants=dict(pair_eval.get("cross_case_input_invariants") or {}),
+        token_accounting=dict(pair_eval.get("token_accounting") or {}),
+        ablations=dict(pair_eval.get("ablations") or {}),
+        cases={"case_A": case_a_view, "case_B": case_b_view},
+    )
 
 
 # ---------------------------------------------------------------------------

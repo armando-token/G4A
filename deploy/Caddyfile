@@ -1,0 +1,22 @@
+# BlackboxDC Read-Only Replay Showcase — Caddy Reverse Proxy Configuration
+# Proxies HTTPS (or HTTP on :8080 for local/LAN verification) to headless Streamlit on 127.0.0.1:8501.
+# Replace `:8080` with your public domain (e.g. `blackboxdc.example.com`) for automatic Let's Encrypt TLS.
+
+{$BLACKBOX_DOMAIN::8080} {
+    encode zstd gzip
+
+    header {
+        X-Content-Type-Options "nosniff"
+        X-Frame-Options "SAMEORIGIN"
+        Referrer-Policy "no-referrer"
+        -Server
+    }
+
+    reverse_proxy 127.0.0.1:8501 {
+        header_up Host {host}
+        header_up X-Real-IP {remote_host}
+        header_up X-Forwarded-For {remote_host}
+        header_up X-Forwarded-Proto {scheme}
+        flush_interval -1
+    }
+}

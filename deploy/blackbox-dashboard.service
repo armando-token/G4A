@@ -1,0 +1,31 @@
+[Unit]
+Description=BlackboxDC Read-Only Visual Causal Audit Replay Dashboard (Streamlit)
+After=network.target
+
+[Service]
+Type=simple
+User=ubuntu
+Group=ubuntu
+WorkingDirectory=/home/ubuntu/G4A
+
+# Explicitly clear all cloud/provider credentials so the web replay process can never make live API calls
+Environment="GOOGLE_API_KEY="
+Environment="GEMINI_API_KEY="
+Environment="GOOGLE_APPLICATION_CREDENTIALS="
+Environment="BLACKBOX_READONLY_REPLAY=1"
+Environment="STREAMLIT_SERVER_HEADLESS=true"
+Environment="STREAMLIT_BROWSER_GATHER_USAGE_STATS=false"
+
+ExecStart=/home/ubuntu/G4A/.venv/bin/streamlit run /home/ubuntu/G4A/blackbox/dashboard.py \
+    --server.address 127.0.0.1 \
+    --server.port 8501 \
+    --server.headless true \
+    --browser.gatherUsageStats false
+
+Restart=on-failure
+RestartSec=5
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
