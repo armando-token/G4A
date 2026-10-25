@@ -220,7 +220,23 @@ def _ensure_fallback_run_bundle(
     }
     (run_dir / "private" / "truth.json").write_text(json.dumps(truth_obj, indent=2), encoding="utf-8")
 
-    # Ensure PNG/meta assets exist (fast deterministic PNGs if not already rendered)
+    # Ensure PNG/meta assets exist (prefer copying real 1280x800 renders from showcase/live1 if available)
+    donor_candidates = (
+        ("showcase_drift_A_to_B", "live1", "mock1")
+        if is_drift
+        else ("showcase_control_A_to_A", "control_mock1")
+    )
+    donor_dir: Optional[Path] = None
+    for cand_name in donor_candidates:
+        cand_path = run_dir.parent / cand_name
+        if cand_path != run_dir and (cand_path / "render0" / "render_wiring.png").is_file():
+            donor_dir = cand_path
+            break
+        repo_cand = REPO_ROOT / "runs" / cand_name
+        if repo_cand != run_dir and (repo_cand / "render0" / "render_wiring.png").is_file():
+            donor_dir = repo_cand
+            break
+
     asset_colors: Dict[str, tuple[int, int, int]] = {
         "old_sld_A.png": (24, 52, 92),
         "current_sld_B.png": (36, 78, 122) if is_drift else (24, 52, 92),
@@ -235,6 +251,13 @@ def _ensure_fallback_run_bundle(
     for rel_path, rgb in asset_colors.items():
         fp = run_dir / rel_path
         if not fp.exists():
+            if donor_dir is not None:
+                donor_fp = donor_dir / rel_path
+                if not donor_fp.is_file() and (donor_dir / "public" / rel_path).is_file():
+                    donor_fp = donor_dir / "public" / rel_path
+                if donor_fp.is_file():
+                    fp.write_bytes(donor_fp.read_bytes())
+                    continue
             fp.write_bytes(_make_minimal_png(64, 36, rgb))
 
     for sub, rev in (("render0", "A"), ("render1", rev_current)):

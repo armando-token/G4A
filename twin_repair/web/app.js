@@ -67,6 +67,14 @@
         btn.classList.remove("active");
       }
     });
+
+    if (typeof window !== "undefined" && typeof window.scrollTo === "function") {
+      try {
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      } catch (_e) {
+        window.scrollTo(0, 0);
+      }
+    }
   }
 
   function assetUrl(runId, relPath) {
@@ -112,11 +120,11 @@
     );
     setText(
       "step-builder-prov",
-      "env=" + (builder.environment_id || "n/a") + " | sess=" + (builder.session_id || "n/a")
+      "env=" + (builder.environment_id || "n/a") + " | id=" + (builder.interaction_id || builder.session_id || "n/a")
     );
     setText(
       "step-critic-prov",
-      "env=" + (critic.environment_id || "n/a") + " | sess=" + (critic.session_id || "n/a")
+      "env=" + (critic.environment_id || "n/a") + " | id=" + (critic.interaction_id || critic.session_id || "n/a")
     );
 
     // State 3: Result
@@ -151,11 +159,11 @@
     setText("human-review-banner", headlines.approval_banner || "Human review required");
     setText(
       "ev-builder-ids",
-      (builder.environment_id || "--") + " / " + (builder.agent_id || "--") + " / " + (builder.session_id || "--")
+      (builder.environment_id || "--") + " / " + (builder.returned_model || builder.agent_id || "--") + " / " + (builder.interaction_id || builder.session_id || "--")
     );
     setText(
       "ev-critic-ids",
-      (critic.environment_id || "--") + " / " + (critic.agent_id || "--") + " / " + (critic.session_id || "--")
+      (critic.environment_id || "--") + " / " + (critic.returned_model || critic.agent_id || "--") + " / " + (critic.interaction_id || critic.session_id || "--")
     );
     setText("ev-graph-score", gs.summary || "--");
     setText(

@@ -435,3 +435,232 @@ html, body {
 body.present-mode .secondary-control {
   display: none;
 }
+
+/* =========================================================================
+ * Responsive Tablet & Mobile Layout (<= 960px and <= 640px)
+ * ========================================================================= */
+@media (max-width: 960px) {
+  html, body {
+    height: auto;
+    min-height: 100%;
+    overflow-x: hidden;
+    overflow-y: auto;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  .app-shell {
+    width: 100%;
+    height: auto;
+    min-height: 100dvh;
+    padding: 10px 12px 28px;
+    gap: 12px;
+  }
+
+  .top-bar {
+    height: auto;
+    flex-wrap: wrap;
+    padding: 10px 12px;
+    gap: 10px;
+  }
+
+  .brand-group {
+    flex: 1 1 auto;
+    min-width: 0;
+    flex-wrap: wrap;
+    gap: 4px 8px;
+  }
+
+  .brand-subtitle {
+    font-size: 12px;
+  }
+
+  .header-badges {
+    flex-shrink: 0;
+    gap: 6px;
+  }
+
+  .state-pills {
+    order: 3;
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 6px;
+  }
+
+  .state-pill {
+    width: 100%;
+    min-height: 38px;
+    padding: 6px 4px;
+    font-size: 12px;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .stage-container,
+  .state-view {
+    flex: none;
+    height: auto;
+    min-height: 0;
+    gap: 12px;
+  }
+
+  .headline-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    min-height: 0;
+  }
+
+  .stage-headline {
+    font-size: 18px;
+    line-height: 1.3;
+  }
+
+  .toggle-group {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  .toggle-btn {
+    width: 100%;
+    min-height: 40px;
+    text-align: center;
+  }
+
+  .comparison-grid {
+    flex: none;
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .visual-card {
+    min-height: 0;
+  }
+
+  .card-header {
+    padding: 8px 10px;
+    gap: 8px;
+  }
+
+  .card-title {
+    font-size: 13px;
+    line-height: 1.25;
+  }
+
+  .image-frame {
+    flex: none;
+    width: 100%;
+    aspect-ratio: 16 / 10;
+    min-height: 200px;
+  }
+
+  .image-frame img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+  }
+
+  .thermal-inset {
+    width: 112px;
+    right: 8px;
+    bottom: 8px;
+    padding: 3px;
+  }
+
+  .thermal-inset img {
+    height: 56px;
+  }
+
+  .thermal-caption {
+    font-size: 9px;
+  }
+
+  .bottom-bar,
+  .result-strip {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+    padding: 12px;
+  }
+
+  .incident-caption {
+    font-size: 13px;
+    line-height: 1.35;
+  }
+
+  .cta-group,
+  .primary-cta,
+  .secondary-cta {
+    width: 100%;
+  }
+
+  .primary-cta,
+  .secondary-cta {
+    min-height: 44px;
+    font-size: 14px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .choice-banner {
+    width: 100%;
+    font-size: 12.5px;
+    line-height: 1.35;
+    word-break: break-word;
+  }
+
+  .evidence-grid {
+    flex: none;
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .kv-list {
+    grid-template-columns: 1fr;
+    gap: 2px;
+  }
+
+  .kv-list dt {
+    margin-top: 6px;
+    font-weight: 600;
+  }
+
+  .kv-list dt:first-child {
+    margin-top: 0;
+  }
+
+  .code-box {
+    min-height: 220px;
+    max-height: 360px;
+    font-size: 11px;
+  }
+}
+
+@media (max-width: 480px) {
+  .brand-divider,
+  .brand-subtitle {
+    display: none;
+  }
+
+  .state-pill {
+    font-size: 11px;
+    padding: 6px 2px;
+  }
+
+  .stage-headline {
+    font-size: 16px;
+  }
+
+  .thermal-inset {
+    width: 96px;
+  }
+
+  .thermal-inset img {
+    height: 48px;
+  }
+}
