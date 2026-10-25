@@ -396,7 +396,6 @@ def create_app(
                 provider_mode=mode,
                 out_dir=run_dir,
                 prepared_scene0_path=prepared_scene0,
-                run_id=run_id,
             )
             elapsed = round(max(0.01, time.monotonic() - t0), 3)
             run_record = {
