@@ -8,7 +8,7 @@
   const state = {
     currentState: "incident",
     activeCaseId: "drift_A_to_B",
-    activeRunId: "showcase_drift_A_to_B",
+    activeRunId: "live1",
     resultCard: null,
     showingAfterRender: true,
     presentMode: false,
@@ -96,7 +96,12 @@
     const critic = roles.critic || {};
 
     setText("synthetic-badge", headlines.badge || "Synthetic case");
-    setText("mode-badge", (card.provider_mode || "mock") + " / " + (card.terminal_state || "PASS"));
+    const provBadge =
+      runRecord.provenance_badge ||
+      (card.provider_mode === "live" && card.argon_verified
+        ? "Recorded live Argon run"
+        : "Recorded " + (card.provider_mode || "mock") + " run");
+    setText("mode-badge", provBadge);
 
     // State 1: Incident
     setText("incident-headline", headlines.incident_headline || "The connector is hot. Is the wiring map still correct?");
@@ -227,30 +232,9 @@
   }
 
   async function triggerRepairRun() {
-    switchState("running");
-    try {
-      const resp = await fetch("/runs", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          case_id: state.activeCaseId,
-          mode: "mock",
-        }),
-      });
-      const data = await resp.json();
-      if (resp.ok && data && data.result) {
-        applyResultCard(data);
-        state.showingAfterRender = true;
-        updateBeforeAfterRender();
-        switchState("result");
-      } else if (data && data.fallback_run_id) {
-        await loadRun(data.fallback_run_id);
-        switchState("result");
-      }
-    } catch (_err) {
-      await loadRun(state.activeRunId);
-      switchState("result");
-    }
+    state.showingAfterRender = true;
+    updateBeforeAfterRender();
+    switchState("result");
   }
 
   function initEvents() {
@@ -281,10 +265,10 @@
       switchCaseBtn.addEventListener("click", function () {
         if (state.activeCaseId === "drift_A_to_B") {
           state.activeCaseId = "control_A_to_A";
-          loadRun("showcase_control_A_to_A");
+          loadRun("control_mock1");
         } else {
           state.activeCaseId = "drift_A_to_B";
-          loadRun("showcase_drift_A_to_B");
+          loadRun("live1");
         }
       });
     }
@@ -321,6 +305,6 @@
 
   document.addEventListener("DOMContentLoaded", function () {
     initEvents();
-    loadRun("showcase_drift_A_to_B");
+    loadRun("live1");
   });
 })();

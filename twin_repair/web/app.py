@@ -2,25 +2,25 @@
 
 Implements §7.F2 of `11_TWIN_REPAIR_ADDON_IMPLEMENTATION_PLAN_EN.md`:
 - `GET /health` -> health status
-- `GET /cases` -> safe case catalog (`drift_A_to_B`, `control_A_to_A`) + quota status
-- `POST /runs` -> start or execute a bounded run (`mock`, `live`, `prepared_builder`)
+- `GET /cases` -> safe case catalog (`drift_A_to_B`, `control_A_to_A`), recorded runs, and quota status
+- `POST /runs` -> execute a genuine `run_twin_repair` run (`mock`, `live`, `prepared_builder`)
   with global 1-active-paid-run lock, public live quota (`max_public_live_runs=2`),
-  `BLACKBOX_JUDGE_CODE` override, and per-visitor cooldown
+  `BLACKBOX_JUDGE_CODE` override, and per-visitor cooldown. Never fabricates `PASS` or
+  `argon_verified=True`; if `mode="live"` is requested without valid credentials, returns a
+  clear error (`HTTP 503`, `passed=False`, `argon_verified=False`).
 - `GET /runs/{run_id}` -> run status, stage, elapsed seconds, and redacted `result_public.json`
-- `GET /runs/{run_id}/assets/{asset_name:path}` -> strict allowlist asset server that
-  rejects `private/truth.json`, `score.json`, `..`, and any non-allowlisted path with HTTP 403
+- `GET /runs/{run_id}/assets/{asset_name:path}` -> strict allowlist asset server that serves
+  authentic files from `runs/live1` (and other recorded/executed runs) and rejects
+  `private/truth.json`, `score.json`, `..`, and any non-allowlisted path with HTTP 403
 - `GET /`, `GET /index.html`, `GET /app.js`, `GET /styles.css` -> 4-state web application UI
 """
 
 from __future__ import annotations
 
-import hashlib
 import json
 import os
-import struct
 import threading
 import time
-import zlib
 from pathlib import Path
 from typing import Any, Dict, Mapping, Optional
 
@@ -29,11 +29,14 @@ from starlette.requests import Request
 from starlette.responses import FileResponse, HTMLResponse, JSONResponse, Response
 from starlette.routing import Route
 
-from twin_repair.report import build_public_result_card
+from blackbox.managed import resolve_auth_config
+from twin_repair.challenge import build_challenge_fixture
+from twin_repair.orchestrator import run_twin_repair
 
 
 WEB_DIR = Path(__file__).resolve().parent
 REPO_ROOT = WEB_DIR.parent.parent
+CANONICAL_RUNS_ROOT = (REPO_ROOT / "runs").resolve()
 
 ALLOWED_CASE_IDS: frozenset[str] = frozenset({"drift_A_to_B", "control_A_to_A"})
 ALLOWED_MODES: frozenset[str] = frozenset({"mock", "live", "prepared_builder"})
@@ -72,299 +75,18 @@ NO_STORE_HEADERS: Dict[str, str] = {
 }
 
 
-def _make_minimal_png(width: int, height: int, rgb: tuple[int, int, int]) -> bytes:
-    """Create a valid minimal RGB PNG byte buffer for fast fallback asset creation."""
-    r, g, b = rgb
-    row = b"\x00" + bytes([r, g, b]) * width
-    raw = row * height
-
-    def _chunk(chunk_type: bytes, data: bytes) -> bytes:
-        crc = zlib.crc32(chunk_type + data) & 0xFFFFFFFF
-        return struct.pack(">I", len(data)) + chunk_type + data + struct.pack(">I", crc)
-
-    ihdr = struct.pack(">IIBBBBB", width, height, 8, 2, 0, 0, 0)
-    idat = zlib.compress(raw, level=1)
-    return b"\x89PNG\r\n\x1a\n" + _chunk(b"IHDR", ihdr) + _chunk(b"IDAT", idat) + _chunk(b"IEND", b"")
-
-
-def _default_edges(revision: str) -> list[dict[str, Any]]:
-    if revision == "A":
-        return [
-            {"edge_id": "E_F1_N1", "feeder_id": "F1", "rack_id": "N1", "Load_A": 18.0, "cord_Color": "#1d8aff"},
-            {"edge_id": "E_F2_N2", "feeder_id": "F2", "rack_id": "N2", "Load_A": 20.0, "cord_Color": "#ff8c1a"},
-            {"edge_id": "E_F2_N3", "feeder_id": "F2", "rack_id": "N3", "Load_A": 22.0, "cord_Color": "#ff8c1a"},
-            {"edge_id": "E_F1_N4", "feeder_id": "F1", "rack_id": "N4", "Load_A": 18.0, "cord_Color": "#1d8aff"},
-        ]
-    return [
-        {"edge_id": "E_F1_N1", "feeder_id": "F1", "rack_id": "N1", "Load_A": 18.0, "cord_Color": "#1d8aff"},
-        {"edge_id": "E_F1_N2", "feeder_id": "F1", "rack_id": "N2", "Load_A": 20.0, "cord_Color": "#1d8aff"},
-        {"edge_id": "E_F2_N2", "feeder_id": "F2", "rack_id": "N2", "Load_A": 20.0, "cord_Color": "#ff8c1a"},
-        {"edge_id": "E_F1_N3", "feeder_id": "F1", "rack_id": "N3", "Load_A": 22.0, "cord_Color": "#1d8aff"},
-        {"edge_id": "E_F1_N4", "feeder_id": "F1", "rack_id": "N4", "Load_A": 18.0, "cord_Color": "#1d8aff"},
-    ]
-
-
-def _default_scene_spec(case_id: str, revision: str) -> dict[str, Any]:
-    return {
-        "schema_version": "scene_spec.v1",
-        "case_id": case_id,
-        "revision": revision,
-        "racks": [
-            {"rack_id": "N1", "label": "N1", "x_m": -2.7, "z_m": 0.0, "load_a": 18.0, "inlet_temp_c": 27.0},
-            {"rack_id": "N2", "label": "N2", "x_m": -0.9, "z_m": 0.0, "load_a": 20.0, "inlet_temp_c": 27.0},
-            {"rack_id": "N3", "label": "N3", "x_m": 0.9, "z_m": 0.0, "load_a": 22.0, "inlet_temp_c": 27.0},
-            {"rack_id": "N4", "label": "N4", "x_m": 2.7, "z_m": 0.0, "load_a": 18.0, "inlet_temp_c": 27.0},
-        ],
-        "feeders": [
-            {"feeder_id": "F1", "label": "F1 (44A)", "limit_a": 44.0, "color_hex": "#1d8aff", "tray_y_m": 2.38, "tray_z_m": 0.26},
-            {"feeder_id": "F2", "label": "F2 (50A)", "limit_a": 50.0, "color_hex": "#ff8c1a", "tray_y_m": 2.12, "tray_z_m": 0.54},
-        ],
-        "edges": _default_edges(revision),
-        "hotspot": {
-            "rack_id": "N4",
-            "connector_id": "CONN_N4_REAR",
-            "sensor_id": "SNS_K2",
-            "temp_t0_c": 61.96,
-            "trip_limit_c": 65.0,
-        },
-        "camera_poses": {
-            "rear_inspection": {"position": [1.85, 1.55, 4.15], "lookAt": [1.65, 1.05, 0.25], "fov_deg": 40.0},
-            "wiring_oblique": {"position": [0.0, 2.85, 5.65], "lookAt": [0.0, 1.55, 0.0], "fov_deg": 42.0},
-        },
-    }
-
-
-def _ensure_fallback_run_bundle(
-    run_dir: Path,
-    *,
-    run_id: str,
-    case_id: str,
-    mode: str,
-    prepared_builder: bool = False,
-) -> Dict[str, Any]:
-    """Ensure a complete, deterministic run artifact directory exists for `run_id`."""
-    run_dir.mkdir(parents=True, exist_ok=True)
-    (run_dir / "private").mkdir(parents=True, exist_ok=True)
-    (run_dir / "render0").mkdir(parents=True, exist_ok=True)
-    (run_dir / "render1").mkdir(parents=True, exist_ok=True)
-
-    is_drift = case_id == "drift_A_to_B"
-    rev_current = "B" if is_drift else "A"
-    decision = "repair" if is_drift else "no_change"
-    terminal_state = "PASS" if is_drift else "CONTROL_NO_CHANGE"
-
-    scene0 = _default_scene_spec(case_id, "A")
-    scene1 = _default_scene_spec(case_id, rev_current)
-
-    if is_drift:
-        patch_obj: Dict[str, Any] = {
-            "schema_version": "ScenePatch.v1",
-            "case_id": case_id,
-            "decision": "repair",
-            "discrepancies": [
-                {
-                    "rack_id": "N2",
-                    "stale_feeders": ["F2"],
-                    "current_feeders": ["F1", "F2"],
-                    "reason": "Current SLD revision B shows N2 dual-fed from F1 and F2 (redundant 50/50 split).",
-                },
-                {
-                    "rack_id": "N3",
-                    "stale_feeders": ["F2"],
-                    "current_feeders": ["F1"],
-                    "reason": "Current SLD revision B shows N3 re-homed from F2 to F1.",
-                },
-            ],
-            "operations": [
-                {
-                    "op": "set_rack_feeders",
-                    "rack_id": "N2",
-                    "feeders": ["F1", "F2"],
-                    "redundancy_split": {"F1": 0.5, "F2": 0.5},
-                },
-                {
-                    "op": "set_rack_feeders",
-                    "rack_id": "N3",
-                    "feeders": ["F1"],
-                    "redundancy_split": {"F1": 1.0},
-                },
-            ],
-            "recommended_receiver": "N2",
-            "rationale": "Moving 8 A from N4 to N3 would overload F1 (48.0/44.0 A); moving 8 A to dual-fed N2 keeps F1 at 40.0/44.0 A and F2 at 28.0/50.0 A.",
-        }
-    else:
-        patch_obj = {
-            "schema_version": "ScenePatch.v1",
-            "case_id": case_id,
-            "decision": "no_change",
-            "discrepancies": [],
-            "operations": [],
-            "recommended_receiver": "N2",
-            "rationale": "Current SLD matches baseline revision A; no scene graph patch required.",
-        }
-
-    # Write JSON artifacts
-    (run_dir / "scene0.json").write_text(json.dumps(scene0, indent=2), encoding="utf-8")
-    (run_dir / "patch.json").write_text(json.dumps(patch_obj, indent=2), encoding="utf-8")
-    (run_dir / "scene1.json").write_text(json.dumps(scene1, indent=2), encoding="utf-8")
-
-    # Write private truth (never allowlisted for web serving)
-    truth_obj = {
-        "schema_version": "TwinRepairPrivateTruth.v1",
-        "case_id": case_id,
-        "revision_old": "A",
-        "revision_current": rev_current,
-        "current_edges_truth": _default_edges(rev_current),
-        "expected_decision": decision,
-        "expected_receiver": "N2",
-    }
-    (run_dir / "private" / "truth.json").write_text(json.dumps(truth_obj, indent=2), encoding="utf-8")
-
-    # Ensure PNG/meta assets exist (prefer copying real 1280x800 renders from showcase/live1 if available)
-    donor_candidates = (
-        ("showcase_drift_A_to_B", "live1", "mock1")
-        if is_drift
-        else ("showcase_control_A_to_A", "control_mock1")
-    )
-    donor_dir: Optional[Path] = None
-    for cand_name in donor_candidates:
-        cand_path = run_dir.parent / cand_name
-        if cand_path != run_dir and (cand_path / "render0" / "render_wiring.png").is_file():
-            donor_dir = cand_path
-            break
-        repo_cand = REPO_ROOT / "runs" / cand_name
-        if repo_cand != run_dir and (repo_cand / "render0" / "render_wiring.png").is_file():
-            donor_dir = repo_cand
-            break
-
-    asset_colors: Dict[str, tuple[int, int, int]] = {
-        "old_sld_A.png": (24, 52, 92),
-        "current_sld_B.png": (36, 78, 122) if is_drift else (24, 52, 92),
-        "old_thermal_rear.png": (180, 48, 24),
-        "render0/render_wiring.png": (20, 44, 80),
-        "render0/render_rgb_rear.png": (32, 40, 56),
-        "render0/render_thermal_rear.png": (190, 54, 28),
-        "render1/render_wiring.png": (28, 92, 148) if is_drift else (20, 44, 80),
-        "render1/render_rgb_rear.png": (36, 48, 64) if is_drift else (32, 40, 56),
-        "render1/render_thermal_rear.png": (190, 54, 28),
-    }
-    for rel_path, rgb in asset_colors.items():
-        fp = run_dir / rel_path
-        if not fp.exists():
-            if donor_dir is not None:
-                donor_fp = donor_dir / rel_path
-                if not donor_fp.is_file() and (donor_dir / "public" / rel_path).is_file():
-                    donor_fp = donor_dir / "public" / rel_path
-                if donor_fp.is_file():
-                    fp.write_bytes(donor_fp.read_bytes())
-                    continue
-            fp.write_bytes(_make_minimal_png(64, 36, rgb))
-
-    for sub, rev in (("render0", "A"), ("render1", rev_current)):
-        meta_path = run_dir / sub / "render_meta.json"
-        if not meta_path.exists():
-            meta_path.write_text(
-                json.dumps(
-                    {
-                        "schema_version": "RenderMeta.v1",
-                        "case_id": case_id,
-                        "revision": rev,
-                        "hotspot_bbox_2d": [765, 290, 825, 350],
-                        "projected_cable_corridors": {
-                            "N1": [[210, 80, 390, 460]],
-                            "N2": [[430, 80, 610, 460]],
-                            "N3": [[650, 80, 830, 460]],
-                            "N4": [[870, 80, 1050, 460]],
-                        },
-                        "revision_hud_Mask_rects": [[0, 0, 360, 64]],
-                    },
-                    indent=2,
-                ),
-                encoding="utf-8",
-            )
-
-    r0_sha = hashlib.sha256((run_dir / "render0" / "render_wiring.png").read_bytes()).hexdigest()
-    r1_sha = hashlib.sha256((run_dir / "render1" / "render_wiring.png").read_bytes()).hexdigest()
-    sld_sha = hashlib.sha256((run_dir / "current_sld_B.png").read_bytes()).hexdigest()
-
-    gates = {
-        "builder_completed": True,
-        "critic_completed": True,
-        "argon_verified": True,
-        "distinct_environments": True,
-        "render0_valid": True,
-        "patch_valid": True,
-        "render1_valid": True,
-        "cable_pixels_changed": bool(is_drift),
-        "graph_improved": bool(is_drift),
-        "physics_safe": True,
-        "human_review_required": True,
-    }
-    score_obj = {
-        "before_correct_edges": 2 if is_drift else 4,
-        "after_correct_edges": 4,
-        "total_edges": 4,
-        "changed_pixels_n2": 8326 if is_drift else 0,
-        "changed_pixels_n3": 8502 if is_drift else 0,
-        "hotspot_registration_px": 0.61,
-        "hotspot_iou": 0.98,
-    }
-    (run_dir / "score.json").write_text(json.dumps(score_obj, indent=2), encoding="utf-8")
-
-    run_data: Dict[str, Any] = {
-        "run_id": run_id,
-        "case_id": case_id,
-        "provider_mode": mode,
-        "source": "fixture" if mode == "mock" else mode,
-        "prepared_builder": prepared_builder or (mode == "prepared_builder"),
-        "terminal_state": terminal_state,
-        "passed": True,
-        "workflow_passed": True,
-        "decision": decision,
-        "revision_old": "A",
-        "revision_current": rev_current,
-        "gates": gates,
-        "score": score_obj,
-        "patch": patch_obj,
-        "render0_wiring_sha256": r0_sha,
-        "render1_wiring_sha256": r1_sha,
-        "current_sld_sha256": sld_sha,
-        "builder_provenance": {
-            "role": "builder",
-            "environment_id": f"env_builder_{run_id}",
-            "agent_id": f"agent_builder_{run_id}",
-            "session_id": f"sess_builder_{run_id}",
-            "model": "gemini-3.1-pro-preview",
-            "Thinking_level": "HIGH",
-        },
-        "critic_provenance": {
-            "role": "critic",
-            "environment_id": f"env_critic_{run_id}",
-            "agent_id": f"agent_critic_{run_id}",
-            "session_id": f"sess_critic_{run_id}",
-            "model": "gemini-3.1-pro-preview",
-            "thinking_level": "LOW",
-        },
-        "timing_spans_s": {
-            "render0": 0.42,
-            "builder": 0.18,
-            "render1": 0.41,
-            "critic": 0.14,
-            "verifier": 0.08,
-        },
-        "total_elapsed_s": 1.23,
-        "token_usage": {
-            "builder": {"prompt_tokens": 1120, "completion_tokens": 340, "total_tokens": 1460},
-            "critic": {"prompt_tokens": 980, "completion_tokens": 210, "total_tokens": 1190},
-        },
-    }
-    public_card = build_public_result_card(run_data)
-    (run_dir / "result_public.json").write_text(json.dumps(public_card, indent=2), encoding="utf-8")
-    return public_card
+def _describe_recorded_label(card: Mapping[str, Any]) -> str:
+    mode = str(card.get("provider_mode") or "").lower()
+    argon_ok = bool(card.get("argon_verified", False))
+    if mode == "live" and argon_ok:
+        return "Recorded live Argon run"
+    if mode == "live":
+        return "Recorded live run (unverified)"
+    return "Recorded mock rehearsal run"
 
 
 class TwinRepairWebState:
-    """In-memory state for bounded run concurrency, live quota, and run registry."""
+    """In-memory state for bounded run concurrency, live quota, and recorded run registry."""
 
     def __init__(
         self,
@@ -381,56 +103,89 @@ class TwinRepairWebState:
         self.active_paid_run_id: Optional[str] = None
         self.last_visitor_run_ts: Dict[str, float] = {}
         self.runs: Dict[str, Dict[str, Any]] = {}
+        self.run_dirs: Dict[str, Path] = {}
         self.lock = threading.Lock()
-        self._bootstrap_showcase_runs()
+        self._load_existing_runs()
 
-    def _bootstrap_showcase_runs(self) -> None:
-        """Ensure showcase replay runs exist on disk so the UI works immediately."""
-        for showcase_id, case_id in (
-            ("showcase_drift_A_to_B", "drift_A_to_B"),
-            ("showcase_control_A_to_A", "control_A_to_A"),
-        ):
-            run_dir = self.runs_root / showcase_id
-            result_path = run_dir / "result_public.json"
-            if result_path.exists():
-                try:
-                    card = json.loads(result_path.read_text(encoding="utf-8"))
-                except Exception:
-                    card = _ensure_fallback_run_bundle(
-                        run_dir, run_id=showcase_id, case_id=case_id, mode="mock"
-                    )
-            else:
-                card = _ensure_fallback_run_bundle(
-                    run_dir, run_id=showcase_id, case_id=case_id, mode="mock"
-                )
-            self.runs[showcase_id] = {
-                "run_id": showcase_id,
-                "case_id": case_id,
-                "mode": str(card.get("provider_mode", "mock")),
-                "status": "COMPLETED",
-                "stage": "completed",
-                "elapsed_s": float(card.get("total_elapsed_s", 1.23)),
-                "result": card,
-            }
+    def _register_run_dir(self, run_key: str, run_dir: Path, *, is_recorded: bool = True) -> Optional[Dict[str, Any]]:
+        rp = run_dir / "result_public.json"
+        if not rp.is_file():
+            return None
+        try:
+            card = json.loads(rp.read_text(encoding="utf-8"))
+        except Exception:
+            return None
+        record = {
+            "run_id": run_key,
+            "source_run_id": str(card.get("run_id", run_key)),
+            "case_id": str(card.get("case_id", "drift_A_to_B")),
+            "mode": str(card.get("provider_mode", "mock")),
+            "status": "COMPLETED",
+            "stage": "completed",
+            "recorded": bool(is_recorded),
+            "provenance_badge": _describe_recorded_label(card) if is_recorded else str(card.get("provider_mode", "mock")),
+            "elapsed_s": float(card.get("total_elapsed_s", 1.0)),
+            "result": card,
+        }
+        self.runs[run_key] = record
+        self.run_dirs[run_key] = run_dir.resolve()
+        return record
 
-        for sub in sorted(self.runs_root.iterdir()):
-            if not sub.is_dir() or sub.name in self.runs or sub.name in ("fixtures", "preflight"):
+    def _load_existing_runs(self) -> None:
+        """Load authentic recorded runs from `runs_root` (and `REPO_ROOT / 'runs'` read-only fallback)."""
+        search_roots = [self.runs_root]
+        if CANONICAL_RUNS_ROOT != self.runs_root and CANONICAL_RUNS_ROOT.is_dir():
+            search_roots.append(CANONICAL_RUNS_ROOT)
+
+        for root_dir in search_roots:
+            for sub in sorted(root_dir.iterdir()):
+                if not sub.is_dir() or sub.name in ("fixtures", "preflight", "_fixtures"):
+                    continue
+                if sub.name.startswith("showcase_"):
+                    continue
+                if sub.name not in self.runs:
+                    self._register_run_dir(sub.name, sub, is_recorded=True)
+
+        # Bind canonical showcase aliases directly to the authentic recorded dossiers (`live1` and `control_mock1`)
+        if "live1" in self.run_dirs:
+            self._register_run_dir("showcase_drift_A_to_B", self.run_dirs["live1"], is_recorded=True)
+        elif "mock1" in self.run_dirs:
+            self._register_run_dir("showcase_drift_A_to_B", self.run_dirs["mock1"], is_recorded=True)
+
+        if "control_mock1" in self.run_dirs:
+            self._register_run_dir("showcase_control_A_to_A", self.run_dirs["control_mock1"], is_recorded=True)
+
+    def resolve_run_dir(self, run_id: str) -> Optional[Path]:
+        with self.lock:
+            mapped = self.run_dirs.get(run_id)
+        if mapped is not None and mapped.is_dir():
+            return mapped
+        for base in (self.runs_root, CANONICAL_RUNS_ROOT):
+            candidate = (base / run_id).resolve()
+            try:
+                candidate.relative_to(base)
+            except ValueError:
                 continue
-            rp = sub / "result_public.json"
-            if rp.is_file():
-                try:
-                    card = json.loads(rp.read_text(encoding="utf-8"))
-                    self.runs[sub.name] = {
-                        "run_id": sub.name,
-                        "case_id": str(card.get("case_id", "drift_A_to_B")),
-                        "mode": str(card.get("provider_mode", "mock")),
-                        "status": "COMPLETED",
-                        "stage": "completed",
-                        "elapsed_s": float(card.get("total_elapsed_s", 1.0)),
-                        "result": card,
-                    }
-                except Exception:
-                    pass
+            if candidate.is_dir() and (candidate / "result_public.json").is_file():
+                with self.lock:
+                    self._register_run_dir(run_id, candidate, is_recorded=True)
+                return candidate
+        return None
+
+    def ensure_case_fixture_dir(self, case_id: str) -> Path:
+        """Return an existing challenge fixture directory or build one deterministically."""
+        canonical_map = {
+            "drift_A_to_B": CANONICAL_RUNS_ROOT / "fixtures" / "drift1",
+            "control_A_to_A": CANONICAL_RUNS_ROOT / "fixtures" / "control1",
+        }
+        cand = canonical_map.get(case_id)
+        if cand is not None and (cand / "public_state.json").is_file():
+            return cand
+
+        local_fixture = self.runs_root / "_fixtures" / case_id
+        if not (local_fixture / "public_state.json").is_file():
+            build_challenge_fixture(local_fixture, seed=20261025, case_type=case_id)
+        return local_fixture
 
 
 def _is_valid_judge_code(provided_code: Optional[str]) -> bool:
@@ -441,7 +196,7 @@ def _is_valid_judge_code(provided_code: Optional[str]) -> bool:
 
 
 def create_app(
-    runs_root: Path | str = REPO_ROOT / "runs",
+    runs_root: Path | str = CANONICAL_RUNS_ROOT,
     *,
     max_public_live_runs: int = 2,
     cooldown_s: float = 0.0,
@@ -480,6 +235,7 @@ def create_app(
                 "status": "ok",
                 "service": "blackbox-twin-repair",
                 "schema_version": "twin_repair_web.v1",
+                "default_recorded_live_run": "live1" if "live1" in state.runs else None,
             },
             headers=NO_STORE_HEADERS,
         )
@@ -491,8 +247,12 @@ def create_app(
             showcase_list = [
                 {
                     "run_id": rid,
+                    "source_run_id": info.get("source_run_id", rid),
                     "case_id": info["case_id"],
                     "mode": info["mode"],
+                    "recorded": info.get("recorded", True),
+                    "provenance_badge": info.get("provenance_badge", ""),
+                    "argon_verified": bool(info["result"].get("argon_verified", False)),
                     "terminal_state": info["result"].get("terminal_state"),
                 }
                 for rid, info in state.runs.items()
@@ -508,7 +268,7 @@ def create_app(
                         "incident_caption": "The old twin suggests moving an 8 A-equivalent workload to N3.",
                         "revision_old": "A",
                         "revision_current": "B",
-                        "default_showcase_run_id": "showcase_drift_A_to_B",
+                        "default_showcase_run_id": "live1" if "live1" in state.runs else "showcase_drift_A_to_B",
                     },
                     {
                         "case_id": "control_A_to_A",
@@ -518,7 +278,7 @@ def create_app(
                         "incident_caption": "Control case: current diagram matches baseline revision A.",
                         "revision_old": "A",
                         "revision_current": "A",
-                        "default_showcase_run_id": "showcase_control_A_to_A",
+                        "default_showcase_run_id": "control_mock1" if "control_mock1" in state.runs else "showcase_control_A_to_A",
                     },
                 ],
                 "public_live_quota_max": state.max_public_live_runs,
@@ -539,7 +299,7 @@ def create_app(
 
         case_id = str(payload.get("case_id") or "drift_A_to_B")
         mode = str(payload.get("mode") or "mock")
-        prepared_builder = bool(payload.get("prepared_builder", mode == "prepared_builder"))
+        prepared_scene0 = payload.get("prepared_scene0")
         judge_code = payload.get("judge_code") or request.headers.get("X-Judge-Code")
 
         if case_id not in ALLOWED_CASE_IDS:
@@ -555,10 +315,34 @@ def create_app(
                 headers=NO_STORE_HEADERS,
             )
 
+        fallback_rid = "live1" if case_id == "drift_A_to_B" else "control_mock1"
         visitor_key = request.client.host if request.client else "local"
         now = time.monotonic()
         is_paid = mode in ("live", "prepared_builder")
         has_judge_override = _is_valid_judge_code(judge_code)
+
+        # For live/paid requests, verify credentials BEFORE consuming quota or claiming execution
+        if is_paid:
+            auth_cfg = resolve_auth_config()
+            if not auth_cfg.get("ready"):
+                return JSONResponse(
+                    {
+                        "error": (
+                            f"Live Argon execution unavailable: {auth_cfg.get('reason', 'missing credentials')}. "
+                            "No live model call was made; inspect the recorded run 'live1' instead."
+                        ),
+                        "case_id": case_id,
+                        "mode": mode,
+                        "status": "FAILED",
+                        "terminal_state": "PROVIDER_ERROR",
+                        "passed": False,
+                        "workflow_passed": False,
+                        "argon_verified": False,
+                        "fallback_run_id": fallback_rid,
+                    },
+                    status_code=503,
+                    headers=NO_STORE_HEADERS,
+                )
 
         with state.lock:
             if state.cooldown_s > 0 and not has_judge_override:
@@ -567,11 +351,7 @@ def create_app(
                     return JSONResponse(
                         {
                             "error": "Cooldown active; please wait before starting another run.",
-                            "fallback_run_id": (
-                                "showcase_drift_A_to_B"
-                                if case_id == "drift_A_to_B"
-                                else "showcase_control_A_to_A"
-                            ),
+                            "fallback_run_id": fallback_rid,
                         },
                         status_code=429,
                         headers=NO_STORE_HEADERS,
@@ -583,11 +363,7 @@ def create_app(
                         {
                             "error": "Another live run is currently in progress; explore a recorded run.",
                             "active_run_id": state.active_paid_run_id,
-                            "fallback_run_id": (
-                                "showcase_drift_A_to_B"
-                                if case_id == "drift_A_to_B"
-                                else "showcase_control_A_to_A"
-                            ),
+                            "fallback_run_id": fallback_rid,
                         },
                         status_code=429,
                         headers=NO_STORE_HEADERS,
@@ -597,11 +373,7 @@ def create_app(
                         {
                             "error": "Live capacity reached; explore a recorded run",
                             "public_live_quota_remaining": 0,
-                            "fallback_run_id": (
-                                "showcase_drift_A_to_B"
-                                if case_id == "drift_A_to_B"
-                                else "showcase_control_A_to_A"
-                            ),
+                            "fallback_run_id": fallback_rid,
                         },
                         status_code=429,
                         headers=NO_STORE_HEADERS,
@@ -618,26 +390,52 @@ def create_app(
         run_dir = state.runs_root / run_id
         t0 = time.monotonic()
         try:
-            card = _ensure_fallback_run_bundle(
-                run_dir,
+            case_dir = state.ensure_case_fixture_dir(case_id)
+            card = run_twin_repair(
+                case_dir,
+                provider_mode=mode,
+                out_dir=run_dir,
+                prepared_scene0_path=prepared_scene0,
                 run_id=run_id,
-                case_id=case_id,
-                mode=mode,
-                prepared_builder=prepared_builder,
             )
             elapsed = round(max(0.01, time.monotonic() - t0), 3)
             run_record = {
                 "run_id": run_id,
+                "source_run_id": str(card.get("run_id", run_id)),
                 "case_id": case_id,
                 "mode": mode,
-                "status": "COMPLETED",
+                "status": "COMPLETED" if card.get("passed") else "FAILED",
                 "stage": "completed",
+                "recorded": False,
+                "provenance_badge": (
+                    "Executed live Argon run"
+                    if (mode == "live" and card.get("argon_verified"))
+                    else f"Executed {mode} run"
+                ),
                 "elapsed_s": elapsed,
                 "result": card,
             }
             with state.lock:
                 state.runs[run_id] = run_record
-            return JSONResponse(run_record, status_code=200, headers=NO_STORE_HEADERS)
+                state.run_dirs[run_id] = run_dir.resolve()
+            http_status = 200 if card.get("terminal_state") in ("PASS", "CONTROL_NO_CHANGE") else 502
+            return JSONResponse(run_record, status_code=http_status, headers=NO_STORE_HEADERS)
+        except Exception as exc:
+            return JSONResponse(
+                {
+                    "error": f"Orchestrator execution failed: {exc.__class__.__name__}: {exc}",
+                    "case_id": case_id,
+                    "mode": mode,
+                    "status": "FAILED",
+                    "terminal_state": "PROVIDER_ERROR",
+                    "passed": False,
+                    "workflow_passed": False,
+                    "argon_verified": False,
+                    "fallback_run_id": fallback_rid,
+                },
+                status_code=502,
+                headers=NO_STORE_HEADERS,
+            )
         finally:
             if is_paid:
                 with state.lock:
@@ -646,34 +444,16 @@ def create_app(
 
     async def get_run_endpoint(request: Request) -> JSONResponse:
         run_id = str(request.path_params.get("run_id", ""))
+        state.resolve_run_dir(run_id)
         with state.lock:
             record = state.runs.get(run_id)
 
         if record is None:
-            # Check if run directory exists on disk in runs_root
-            disk_dir = (state.runs_root / run_id).resolve()
-            if (
-                disk_dir.parent == state.runs_root
-                and (disk_dir / "result_public.json").is_file()
-            ):
-                card = json.loads((disk_dir / "result_public.json").read_text(encoding="utf-8"))
-                record = {
-                    "run_id": run_id,
-                    "case_id": str(card.get("case_id", "drift_A_to_B")),
-                    "mode": str(card.get("provider_mode", "mock")),
-                    "status": "COMPLETED",
-                    "stage": "completed",
-                    "elapsed_s": float(card.get("total_elapsed_s", 1.0)),
-                    "result": card,
-                }
-                with state.lock:
-                    state.runs[run_id] = record
-            else:
-                return JSONResponse(
-                    {"error": f"Run not found: {run_id}"},
-                    status_code=404,
-                    headers=NO_STORE_HEADERS,
-                )
+            return JSONResponse(
+                {"error": f"Run not found: {run_id}"},
+                status_code=404,
+                headers=NO_STORE_HEADERS,
+            )
 
         return JSONResponse(record, headers=NO_STORE_HEADERS)
 
@@ -694,29 +474,38 @@ def create_app(
                 headers=NO_STORE_HEADERS,
             )
 
-        run_dir = (state.runs_root / run_id).resolve()
-        try:
-            run_dir.relative_to(state.runs_root)
-        except ValueError:
+        run_dir = state.resolve_run_dir(run_id)
+        if run_dir is None:
             return JSONResponse(
-                {"error": "Forbidden: invalid run path."},
-                status_code=403,
+                {"error": f"Run not found: {run_id}"},
+                status_code=404,
                 headers=NO_STORE_HEADERS,
             )
 
-        asset_path = (run_dir / raw_asset).resolve()
-        if not asset_path.is_file() and (run_dir / "public" / raw_asset).is_file():
-            asset_path = (run_dir / "public" / raw_asset).resolve()
-        try:
-            asset_path.relative_to(run_dir)
-        except ValueError:
-            return JSONResponse(
-                {"error": "Forbidden: path traversal blocked."},
-                status_code=403,
-                headers=NO_STORE_HEADERS,
-            )
+        candidates = [
+            (run_dir / raw_asset).resolve(),
+            (run_dir / "public" / raw_asset).resolve(),
+        ]
+        # For control_A_to_A runs (decision == "no_change"), render1 is identical to render0
+        if raw_asset.startswith("render1/"):
+            r0_equiv = "render0/" + raw_asset[len("render1/"):]
+            candidates.append((run_dir / r0_equiv).resolve())
 
-        if not asset_path.is_file():
+        asset_path: Optional[Path] = None
+        for cand in candidates:
+            try:
+                cand.relative_to(run_dir)
+            except ValueError:
+                return JSONResponse(
+                    {"error": "Forbidden: path traversal blocked."},
+                    status_code=403,
+                    headers=NO_STORE_HEADERS,
+                )
+            if cand.is_file():
+                asset_path = cand
+                break
+
+        if asset_path is None:
             return JSONResponse(
                 {"error": f"Asset not found: {raw_asset}"},
                 status_code=404,

@@ -102,7 +102,9 @@ def test_render_bridge_cli_entrypoint(tmp_path: Path) -> None:
 
 
 def test_web_app_routes_and_security_gates(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    """Verify Phase F web endpoints, 4-state UI, live quota, judge override, and HTTP 403 asset security."""
+    """Verify Phase F web endpoints, authentic live1 assets, no-credential live rejection, and HTTP 403 security."""
+    import hashlib
+
     monkeypatch.setenv("BLACKBOX_JUDGE_CODE", "SECRET_JUDGE_2026")
     app = create_app(runs_root=tmp_path / "runs", max_public_live_runs=2, cooldown_s=0.0)
     client = TestClient(app)
@@ -115,12 +117,32 @@ def test_web_app_routes_and_security_gates(tmp_path: Path, monkeypatch: pytest.M
     r_index = client.get("/?present=1")
     assert r_index.status_code == 200
     assert "The connector is hot. Is the wiring map still correct?" in r_index.text
-    assert "Repair 3D Twin" in r_index.text
+    assert "View verified run" in r_index.text
+    assert "Recorded live Argon run" in r_index.text
 
     assert client.get("/app.js").status_code == 200
     assert client.get("/styles.css").status_code == 200
 
-    # 2. Cases endpoint
+    # 2. Authentic runs/live1 verification (exact SHA-256 against dossier)
+    r_live_rec = client.get("/runs/live1")
+    assert r_live_rec.status_code == 200
+    live_rec_json = r_live_rec.json()
+    assert live_rec_json["provenance_badge"] == "Recorded live Argon run"
+    assert live_rec_json["result"]["run_id"] == "twin-repair-a9a617846fdc"
+    assert live_rec_json["result"]["argon_verified"] is True
+    assert live_rec_json["result"]["passed"] is True
+
+    expected_shas = {
+        "current_sld_B.png": "186249a7cd93520e20d65e1234f7cd3a032eaf32b6bc3ffb570afffb4d4cba7c",
+        "render0/render_wiring.png": "878ea0b344dc8d728d250b3ffd08c815dc75c1361d7b8b0bba0588da19e97cf9",
+        "render1/render_wiring.png": "6e2544c677aa6314e574e8176befbe14a973ecf6ea9bc159aa28d1cad792673d",
+    }
+    for asset_rel, exp_sha in expected_shas.items():
+        r_asset = client.get(f"/runs/live1/assets/{asset_rel}")
+        assert r_asset.status_code == 200
+        assert hashlib.sha256(r_asset.content).hexdigest() == exp_sha
+
+    # 3. Cases endpoint
     r_cases = client.get("/cases")
     assert r_cases.status_code == 200
     cases_data = r_cases.json()
@@ -128,39 +150,29 @@ def test_web_app_routes_and_security_gates(tmp_path: Path, monkeypatch: pytest.M
     assert case_ids == {"drift_A_to_B", "control_A_to_A"}
     assert cases_data["public_live_quota_remaining"] == 2
 
-    # 3. POST /runs for drift_A_to_B (mock)
+    # 4. POST /runs for drift_A_to_B (mock) genuinely runs orchestrator with argon_verified=False
     r_drift = client.post("/runs", json={"case_id": "drift_A_to_B", "mode": "mock"})
     assert r_drift.status_code == 200
     drift_payload = r_drift.json()
     drift_run_id = drift_payload["run_id"]
     drift_card = drift_payload["result"]
     assert drift_card["terminal_state"] == "PASS"
+    assert drift_card["provider_mode"] == "mock"
+    assert drift_card["argon_verified"] is False
     for gate_key in REQUIRED_GATE_KEYS:
         assert gate_key in drift_card
         assert isinstance(drift_card[gate_key], bool)
     assert drift_card["cable_pixels_changed"] is True
     assert drift_card["graph_improved"] is True
     assert drift_card["human_review_required"] is True
-    assert (
-        drift_card["headlines"]["result_caption"]
-        == "Argon corrected the twin's wiring before the operator relied on its old recommendation."
-    )
 
-    # 4. POST /runs for control_A_to_A (mock)
+    # 5. POST /runs for control_A_to_A (mock)
     r_ctrl = client.post("/runs", json={"case_id": "control_A_to_A", "mode": "mock"})
     assert r_ctrl.status_code == 200
     ctrl_card = r_ctrl.json()["result"]
     assert ctrl_card["terminal_state"] == "CONTROL_NO_CHANGE"
+    assert ctrl_card["argon_verified"] is False
     assert ctrl_card["cable_pixels_changed"] is False
-    assert (
-        ctrl_card["headlines"]["result_caption"]
-        == "The drawing and twin already agree; no repair was made."
-    )
-
-    # 5. GET /runs/{run_id}
-    r_get_run = client.get(f"/runs/{drift_run_id}")
-    assert r_get_run.status_code == 200
-    assert r_get_run.json()["run_id"] == drift_run_id
 
     # 6. Public asset allowlist vs HTTP 403 Forbidden on private/truth.json and traversal
     for allowed_asset in (
@@ -185,7 +197,27 @@ def test_web_app_routes_and_security_gates(tmp_path: Path, monkeypatch: pytest.M
         resp_bad = client.get(f"/runs/{drift_run_id}/assets/{forbidden_asset}")
         assert resp_bad.status_code == 403, f"Expected 403 for {forbidden_asset}, got {resp_bad.status_code}"
 
-    # 7. Public live quota (2 runs allowed without judge code, 3rd returns HTTP 429, judge code overrides)
+    # 7. Without credentials, POST /runs with mode="live" MUST fail closed (never fabricate PASS or argon_verified)
+    monkeypatch.setattr(
+        "twin_repair.web.app.resolve_auth_config",
+        lambda: {"mode": "mock", "ready": False, "reason": "No GEMINI_API_KEY configured"},
+    )
+    r_no_creds = client.post("/runs", json={"case_id": "drift_A_to_B", "mode": "live"})
+    assert r_no_creds.status_code == 503
+    no_creds_data = r_no_creds.json()
+    assert no_creds_data["passed"] is False
+    assert no_creds_data["argon_verified"] is False
+    assert no_creds_data["terminal_state"] == "PROVIDER_ERROR"
+
+    # 8. With credentials present, public live quota (2 runs allowed without judge code, 3rd returns HTTP 429, judge code overrides)
+    monkeypatch.setattr(
+        "twin_repair.web.app.resolve_auth_config",
+        lambda: {"mode": "ai_studio", "ready": True, "api_key_present": True},
+    )
+    monkeypatch.setattr(
+        "twin_repair.web.app.run_twin_repair",
+        lambda case_dir, **kw: dict(live_rec_json["result"], run_id=kw.get("run_id", "stub")),
+    )
     r_live1 = client.post("/runs", json={"case_id": "drift_A_to_B", "mode": "live"})
     assert r_live1.status_code == 200
     r_live2 = client.post("/runs", json={"case_id": "drift_A_to_B", "mode": "live"})
