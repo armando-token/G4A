@@ -1,0 +1,13 @@
+{
+  "name": "blackbox-static3d",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "playwright-core": "1.51.1",
+    "three": "0.174.0"
+  },
+  "scripts": {
+    "capture": "node capture.mjs"
+  }
+}
