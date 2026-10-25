@@ -301,7 +301,7 @@ async function startRun() {
       return;
     }
     let msg = body.error || `Run could not start (HTTP ${status}).`;
-    if (status === 409 && body.active_run_id) msg += ` Watch it: /live?run=${body.active_run_id}`;
+    if (status === 409 && body.active_run_id) msg += ` Watch it: /?run=${body.active_run_id}`;
     $('#runMsg').textContent = msg;
     if (status === 503) setHeadline(COPY.failure, 'bad');
   } catch {

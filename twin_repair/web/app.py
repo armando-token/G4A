@@ -534,8 +534,7 @@ def create_app(
         )
 
     routes = [
-        Route("/", index_endpoint, methods=["GET"]),
-        Route("/index.html", index_endpoint, methods=["GET"]),
+        Route("/replay", index_endpoint, methods=["GET"]),
         Route("/app.js", app_js_endpoint, methods=["GET"]),
         Route("/styles.css", styles_css_endpoint, methods=["GET"]),
         Route("/health", health_endpoint, methods=["GET"]),

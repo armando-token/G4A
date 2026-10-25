@@ -1,13 +1,13 @@
 # Live judge demo — baseline and evidence
 
 - Baseline: HEAD 339f517. After this change the full suite passes (184 tests, including 24 in `tests/test_judge_live.py`).
-- Recorded run `live1` is unchanged. It is still served at `/` and at `/live?run=live1` (result_public.json sha256 prefix aef6e0dffa6015d4).
+- Recorded run `live1` is unchanged. The old replay page moved to `/replay`; the run opens in the live demo at `/?run=live1` (result_public.json sha256 prefix aef6e0dffa6015d4).
 
 ## What was added
 - **Phase A, async API** (`twin_repair/web/live_api.py`):
   - Flow: `POST /api/live/challenges` → `POST /api/live/runs` (Idempotency-Key) → `GET /api/live/runs/{id}` polling, plus `/actions`.
   - Shared busy lock with the legacy paid runs, quotas and restart recovery.
-  - The page is served at `/live`.
+  - The page is served at `/` (legacy `/live` 301-redirects to `/`; static assets under `/static/`).
 - **Phase B, fresh drawings** (`blackbox/render_sld.py`, `twin_repair/judge_live.py`): every challenge renders a new as-built SLD from the selected mapping. The drawing number and file name never reveal the answer.
 - **Phase C, independent verification**:
   - The Critic uses a neutral prompt (`twin_repair/prompts/critic_neutral.txt`).

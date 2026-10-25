@@ -2,7 +2,7 @@
 
 Routes (all mounted by ``create_app``):
 
-- ``GET  /live``                                   -> interactive judge page
+- ``GET  /``                                       -> interactive judge page (``/live`` redirects here)
 - ``GET  /api/live/config``                        -> availability, quota, modes (no secrets)
 - ``POST /api/live/challenges``                    -> fresh blinded drawing (201)
 - ``POST /api/live/runs``                          -> queue a run for a challenge (202, idempotent)
@@ -26,7 +26,7 @@ from pathlib import Path
 from typing import Any, Callable, Dict, List, Mapping, Optional
 
 from starlette.requests import Request
-from starlette.responses import FileResponse, JSONResponse, Response
+from starlette.responses import FileResponse, JSONResponse, RedirectResponse, Response
 from starlette.routing import Route
 
 from blackbox.managed import resolve_auth_config
@@ -256,7 +256,7 @@ class JudgeLiveService:
                 "drawing_no": manifest.get("drawing_no"),
             },
             "status_url": f"/api/live/runs/{run_id}",
-            "page_url": f"/live?run={run_id}",
+            "page_url": f"/?run={run_id}",
             "recorded": False,
         }
         if state in DONE_STATES:
@@ -300,7 +300,7 @@ class JudgeLiveService:
             "created_at": card.get("generated_at_utc"),
             "drawing": {"url": f"/api/live/runs/{run_id}/assets/current_sld.png", "sha256": sld_sha, "drawing_no": None},
             "status_url": f"/api/live/runs/{run_id}",
-            "page_url": f"/live?run={run_id}",
+            "page_url": f"/?run={run_id}",
             "source": "recorded_live_replay",
             "result": result,
         }
@@ -371,7 +371,7 @@ class JudgeLiveService:
                 }
             busy = self.active_run_id or self.external_busy_fn()
             if busy is not None:
-                return 409, {"error": "Another judge run is in progress.", "active_run_id": busy, "active_page_url": f"/live?run={busy}"}
+                return 409, {"error": "Another judge run is in progress.", "active_run_id": busy, "active_page_url": f"/?run={busy}"}
             if paid:
                 q = self.quota_view()
                 if judge_authorized:
@@ -421,6 +421,10 @@ class JudgeLiveService:
 def build_live_routes(service: JudgeLiveService, judge_code_check: Callable[[Optional[str]], bool]) -> List[Route]:
     async def live_page(request: Request) -> Response:
         return FileResponse(WEB_DIR / "live" / "live.html", media_type="text/html; charset=utf-8", headers={"Cache-Control": "no-cache"})
+
+    async def legacy_live_redirect(request: Request) -> Response:
+        query = request.url.query
+        return RedirectResponse(f"/?{query}" if query else "/", status_code=301)
 
     async def live_static(request: Request) -> Response:
         name = str(request.path_params.get("name", ""))
@@ -514,8 +518,10 @@ def build_live_routes(service: JudgeLiveService, judge_code_check: Callable[[Opt
         return FileResponse(path, media_type=media, headers={"Cache-Control": "private, max-age=300"})
 
     return [
-        Route("/live", live_page, methods=["GET"]),
-        Route("/live/{name}", live_static, methods=["GET"]),
+        Route("/", live_page, methods=["GET"]),
+        Route("/index.html", live_page, methods=["GET"]),
+        Route("/live", legacy_live_redirect, methods=["GET"]),
+        Route("/static/{name}", live_static, methods=["GET"]),
         Route("/vendor/three/{name:path}", vendor_static, methods=["GET"]),
         Route("/api/live/config", config_endpoint, methods=["GET"]),
         Route("/api/live/challenges", create_challenge, methods=["POST"]),

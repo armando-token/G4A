@@ -114,7 +114,7 @@ def test_web_app_routes_and_security_gates(tmp_path: Path, monkeypatch: pytest.M
     assert r_health.status_code == 200
     assert r_health.json()["status"] == "ok"
 
-    r_index = client.get("/?present=1")
+    r_index = client.get("/replay?present=1")
     assert r_index.status_code == 200
     assert "The connector is hot. Is the wiring map still correct?" in r_index.text
     assert "View verified run" in r_index.text

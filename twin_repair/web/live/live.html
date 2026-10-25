@@ -7,11 +7,11 @@
   <meta name="description" content="BlackboxDC Twin Repair: Argon Managed Agents compare a new as-built drawing with an old digital twin before an operator moves load off a hot rack.">
   <title>BlackboxDC Twin Repair · Live judge demo</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 16 16%27%3E%3Crect width=%2716%27 height=%2716%27 rx=%273%27 fill=%27%231d8aff%27/%3E%3Cpath d=%27M16 0v16H0z%27 fill=%27%23ff8c1a%27/%3E%3C/svg%3E">
-  <link rel="stylesheet" href="/live/live.css">
+  <link rel="stylesheet" href="/static/live.css">
   <script type="importmap">
     {"imports": {"three": "/vendor/three/three.module.min.js", "three/addons/": "/vendor/three/addons/"}}
   </script>
-  <link rel="modulepreload" href="/live/live.js">
+  <link rel="modulepreload" href="/static/live.js">
   <link rel="modulepreload" href="/vendor/three/three.module.min.js">
   <link rel="modulepreload" href="/vendor/three/three.core.min.js">
 </head>
@@ -23,7 +23,6 @@
     </div>
     <div class="topbar-right">
       <span id="liveBadge" class="pill pill-muted" role="status">Checking Argon…</span>
-      <a class="link-quiet" href="/" title="Original recorded replay page">Replay</a>
     </div>
   </header>
 
@@ -129,7 +128,7 @@
           </div>
         </article>
 
-        <p class="fine center"><a id="recordedLink" href="/live?run=live1">Open the recorded full two-agent live run (live1)</a></p>
+        <p class="fine center"><a id="recordedLink" href="/?run=live1">Open the recorded full two-agent live run (live1)</a></p>
       </section>
 
       <section id="tab-agents" class="tabpanel" role="tabpanel" aria-labelledby="t-agents" hidden>
@@ -176,7 +175,7 @@
     <p class="fine">Tap the drawing to zoom in or out.</p>
   </dialog>
 
-  <noscript><p class="noscript">This demo needs JavaScript. The recorded replay is at <a href="/">/</a>.</p></noscript>
-  <script type="module" src="/live/live.js"></script>
+  <noscript><p class="noscript">This demo needs JavaScript.</p></noscript>
+  <script type="module" src="/static/live.js"></script>
 </body>
 </html>
