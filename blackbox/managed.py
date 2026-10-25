@@ -160,7 +160,9 @@ class ManagedAgentTransport:
         """Invoke Google Gen AI SDK when live API credentials are configured."""
         from google import genai
         from google.genai import types
+        from blackbox.preflight import _load_dotenv_if_present
 
+        _load_dotenv_if_present()
         api_key = os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY")
         if not api_key:
             raise RuntimeError("Missing GEMINI_API_KEY / GOOGLE_API_KEY for live mode")

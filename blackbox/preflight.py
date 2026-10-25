@@ -129,6 +129,25 @@ def _default_gcloud_adc_path() -> Path:
     return Path.home() / ".config" / "gcloud" / "application_default_credentials.json"
 
 
+def _load_dotenv_if_present() -> None:
+    """Load key=value pairs from repo `.env` into os.environ if not already set."""
+    dotenv_path = Path(__file__).resolve().parent.parent / ".env"
+    if not dotenv_path.is_file():
+        return
+    try:
+        for raw_line in dotenv_path.read_text(encoding="utf-8").splitlines():
+            line = raw_line.strip()
+            if not line or line.startswith("#") or "=" not in line:
+                continue
+            key, val = line.split("=", 1)
+            key = key.strip()
+            val = val.strip().strip('"').strip("'")
+            if key and key not in os.environ:
+                os.environ[key] = val
+    except OSError:
+        pass
+
+
 def check_credentials(
     env: Mapping[str, str] | None = None,
     adc_path: Path | None = None,
@@ -137,7 +156,11 @@ def check_credentials(
 
     Never includes the value of GEMINI_API_KEY, GOOGLE_API_KEY, or credential file paths/contents.
     """
-    environ = os.environ if env is None else env
+    if env is None:
+        _load_dotenv_if_present()
+        environ: Mapping[str, str] = os.environ
+    else:
+        environ = env
     use_vertex = _parse_bool_env(environ.get("GOOGLE_GENAI_USE_VERTEXAI"))
 
     gemini_key_raw = (environ.get("GEMINI_API_KEY") or "").strip()

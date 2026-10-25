@@ -437,12 +437,16 @@ def critique_and_propose_patch(
     model_id: str = "gemini-4-argon",
 ) -> SceneCritique:
     """Inspect the rendered 3D PNG and metrics, returning a structured critique and scene patch."""
-    if use_live_argon and (os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY")):
+    from blackbox.preflight import _load_dotenv_if_present
+
+    _load_dotenv_if_present()
+    api_key = os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY")
+    if use_live_argon and api_key:
         try:
             from google import genai
             from google.genai import types
 
-            client = genai.Client()
+            client = genai.Client(api_key=api_key)
             image_bytes = Path(metrics.image_path).read_bytes()
             prompt = (
                 "You are auditing a 3D data-center thermal scene render for Hall-4 (racks N1..N4). "
