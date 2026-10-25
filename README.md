@@ -111,6 +111,54 @@ G4A/
 
 ---
 
+## BlackboxDC Twin Repair (`twin_repair/`) — Closed-Loop 3D Digital Twin Render, Visual Critique & Electro-Thermal Repair
+
+Implemented per [`md/11_TWIN_REPAIR_ADDON_IMPLEMENTATION_PLAN_EN.md`](md/11_TWIN_REPAIR_ADDON_IMPLEMENTATION_PLAN_EN.md), **`twin_repair/`** adds an interactive 3D digital-twin repair loop (Track Two live render → visual critique → structured patch → 3D re-render → electro-thermal safety verification) on top of the `blackbox/` physics and Managed Agent transport kernel:
+
+1. **Builder Managed Agent (`antigravity-preview-09-2026` / `gemini-4-argon`)**: Reconstructs an initial `scene_spec.v1` (`scene0.json`) in an isolated remote sandbox from historical commissioning drawings (`old_sld_A.png`) and rear thermal imagery (`old_thermal_rear.png`).
+2. **Parameterized 3D Three.js Renderer (`blackbox/static3d/scene.js` + `twin_repair/render_bridge.py`)**: Renders `1280×800` `render_wiring.png`, `render_rgb_rear.png`, and `render_thermal_rear.png` with overhead `F1` (`#1d8aff`, `44 A`) and `F2` (`#ff8c1a`, `50 A`) busbars separated by `0.382 m >= 0.20 m` in 3D space and graph-coupled `THREE.TubeGeometry` feeder drop cables.
+3. **Visual Critic Managed Agent (`antigravity-preview-09-2026` / `gemini-4-argon`)**: Runs in a **second, disjoint remote sandbox** (`distinct_environments = True`), compares `render0/render_wiring.png` against the current as-built SLD (`current_sld_B.png`), localizes the drifted `N2` and `N3` feeder cables with pixel bounding boxes, and emits a hash-bound `repair_patch.v1` (`patch.json`).
+4. **Deterministic Patch Application, 3D Re-Render & Sealed Verifier (`twin_repair/verifier.py`)**: Applies `replace_feeder` operations (`N2: F1 -> F2`, `N3: F2 -> F1`), re-renders `render1/render_wiring.png`, verifies cable pixel changes inside the projected `N2`/`N3` corridors (`8,326` and `8,502` changed pixels with HUD masked out), upgrades graph accuracy from `2/4 -> 4/4`, and reverses the load-shift recommendation from unsafe `N3` (`F1 = 48.0/44.0 A` overload) to safe `N2` (`F1 = 40.0/44.0 A`, `F2 = 28.0/50.0 A`, `N4(180s) = 52.53°C <= 85.0°C`).
+
+### Verified Live Twin-Repair Run (`runs/live1` / [`RESULTS_TWIN_REPAIR.md`](RESULTS_TWIN_REPAIR.md))
+
+| Metric / Gate | Live Run Value (`twin-repair-a9a617846fdc`) | Gate Status |
+| :--- | :--- | :--- |
+| **Builder Managed Agent (`gemini-4-argon`)** | `v1_Chd2RzdlYXFxb0pMekR4ZElQZzRTSzJRTRIXdkc3ZWFxcW9KTHpEeGRJUGc0U0syUU0` (`env=edf75e56c487e37f0b63f4bc8e5b204c`) | `builder_completed = True` |
+| **Visual Critic Managed Agent (`gemini-4-argon`)** | `v1_Chc2bTdlYXJYcko2UFMwX2dQaHNYVTZRTRIXNm03ZWFyWHJKNlBTMF9nUGhzWFU2UU0` (`env=26e8d5e5c359ebb9ba783aa4e4391aff`) | `critic_completed = True` |
+| **Sandbox Environment Isolation** | `edf75e56c487e37f0b63f4bc8e5b204c != 26e8d5e5c359ebb9ba783aa4e4391aff` | `distinct_environments = True` |
+| **3D Cable Pixel Delta (`render0` -> `render1`)** | `N2 = 8,326 px`, `N3 = 8,502 px` (`N1 = 0 px`, `N4 = 0 px`, HUD excluded) | `cable_pixels_changed = True` |
+| **Hotspot Registration & IoU (`N4`)** | `0.608 px <= 3.0 px`, `IoU = 1.000` | `render0_valid = True`, `render1_valid = True` |
+| **As-Built Graph Accuracy** | `2/4 -> 4/4` (`N2: F1->F2`, `N3: F2->F1`) | `graph_improved = True` |
+| **Electro-Thermal Decision Consequence** | Stale twin: `N3` (`F1=48/44 A` overload) → Repaired twin: `N2` (`F1=40/44 A`, `F2=28/50 A`, `52.53°C`) | `physics_safe = True` |
+| **Token Usage (Builder + Critic)** | `39,019` noncached tokens (`76,429` total tokens) | `argon_verified = True`, `passed = True` |
+
+### Twin Repair CLI & Interactive 3D Web App Commands
+
+```bash
+# 1. Generate deterministic drift (A->B) and control (A->A) challenge fixtures
+python -m twin_repair.challenge build --seed 20261025 --out runs/fixtures/drift1
+python -m twin_repair.challenge build --seed 20261025 --case-type control_A_to_A --out runs/fixtures/control1
+
+# 2. Render 3D scene specification via headless Chromium + Three.js
+python -m twin_repair.render_bridge --spec runs/fixtures/drift1/scene_A.json --out runs/fixtures/drift1/render_A
+
+# 3. Run offline mock rehearsal or live Argon Managed Agent workflow
+python -m twin_repair.orchestrator mock --case runs/fixtures/drift1 --out runs/mock1
+python -m twin_repair.orchestrator live --case runs/fixtures/drift1 --out runs/live1 --max-noncached-tokens 80000
+python -m twin_repair.orchestrator replay --run runs/live1
+
+# 4. Launch the 4-state Three.js + Starlette interactive web experience (supports ?present=1)
+python -m twin_repair.web --host 127.0.0.1 --port 8000 --runs runs
+```
+
+### Provenance & Scope Disclosure
+
+- **Event-Day Original Extension (`twin_repair/` + parameterized `blackbox/static3d/`)**: Closed-loop 3D digital twin scene specification (`SceneSpec v1`), graph-coupled 3D cable renderer, visual Critic patch protocol (`RepairPatch v1`), sealed geometric/pixel/physics verifier, and 4-state interactive Three.js web experience.
+- **Pre-Event Reused Baseline (`blackbox/domain.py`, `blackbox/managed.py`)**: Lumped RC electro-thermal ODE solver and Google GenAI Managed Agent polling/file-retrieval transport (documented in [`runs/preflight/reuse_map.md`](runs/preflight/reuse_map.md)).
+
+---
+
 ## Explicit Scope & Safety Boundaries
 
 - **Advisory Simulation Only (`physical_safety_certified = False`)**: Every contract and report enforces `physical_safety_certified: false`. No output is certified for physical electrical utility or data-center operations.

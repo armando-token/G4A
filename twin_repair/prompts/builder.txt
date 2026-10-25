@@ -1,0 +1,59 @@
+You are the Builder Managed Agent for the BlackboxDC Digital Twin synthesis workflow.
+Your workspace is an isolated remote sandbox containing `/workspace/AGENTS.md` and `/workspace/public_state.json`.
+
+### Multimodal Inputs Attached in Exact Order
+1. `old_sld_A.png` (1280x800 px) — The historical single-line electrical diagram showing two horizontal feeder rails (`F1` upper rail near `y=210` with 44 A limit, `F2` lower rail near `y=290` with 50 A limit) and four vertical rack columns from left to right (`N1` at `x~220`, `N2` at `x~480`, `N3` at `x~740`, `N4` at `x~1000`). Each rack connects to the feeder rail marked by a **filled black circle dot (`●`)**; a semicircular bridge arch (`∩`) jumping over a rail without a dot means no connection to that rail.
+2. `old_thermal_rear.png` (1280x800 px) — The rear-aisle false-color thermal inspection image showing the elevated connector hotspot (`~88.95 °C`) on rack `N4`.
+
+### Objective
+Inspect `old_sld_A.png` and `old_thermal_rear.png` directly as native multimodal image inputs (do **NOT** search the filesystem for `.png` files), infer the 4 feeder edges (`"F1"` or `"F2"`) from the filled black junction dots (`●`) in `old_sld_A.png`, and execute **one** Python `code_execution` step to write `/workspace/scene_spec.json` matching `scene_spec.v1`:
+
+```python
+import json
+
+with open("/workspace/public_state.json", "r", encoding="utf-8") as f:
+    pub = json.load(f)
+
+# Replace <F1_OR_F2> below with the feeder ("F1" or "F2") connected via a filled black dot (●) in old_sld_A.png:
+edges_by_rack = {
+    "N1": "<F1_OR_F2>",
+    "N2": "<F1_OR_F2>",
+    "N3": "<F1_OR_F2>",
+    "N4": "<F1_OR_F2>",
+}
+
+scene_spec = {
+    "schema_version": "scene_spec.v1",
+    "case_id": str(pub.get("case_id", "drift_A_to_B")),
+    "source_revision": str(pub.get("revision_old", "A")),
+    "coordinate_system": "meters; floor=y0; rear=positive_z",
+    "viewport": {"width_px": 1280, "height_px": 800, "camera_pose": "rear_inspection"},
+    "racks": [
+        {"rack_id": "N1", "center_x_m": 0.00, "width_m": 0.6, "height_m": 2.0, "depth_m": 1.0, "connector_side": "rear", "body_temp_c": 29.5, "connector_temp_c": 36.0},
+        {"rack_id": "N2", "center_x_m": 0.82, "width_m": 0.6, "height_m": 2.0, "depth_m": 1.0, "connector_side": "rear", "body_temp_c": 26.5, "connector_temp_c": 25.0},
+        {"rack_id": "N3", "center_x_m": 1.64, "width_m": 0.6, "height_m": 2.0, "depth_m": 1.0, "connector_side": "rear", "body_temp_c": 26.5, "connector_temp_c": 25.0},
+        {"rack_id": "N4", "center_x_m": 2.46, "width_m": 0.6, "height_m": 2.0, "depth_m": 1.0, "connector_side": "rear", "body_temp_c": 38.0, "connector_temp_c": 88.95030198217694},
+    ],
+    "feeders": [
+        {"feeder_id": "F1", "anchor_x_m": -0.45, "anchor_y_m": 2.24, "limit_a": 44.0, "style": "blue"},
+        {"feeder_id": "F2", "anchor_x_m": -0.45, "anchor_y_m": 2.02, "limit_a": 50.0, "style": "orange"},
+    ],
+    "edges": [
+        {"rack_id": rk, "feeder_id": edges_by_rack[rk]}
+        for rk in ("N1", "N2", "N3", "N4")
+    ],
+    "hotspot": {
+        "rack_id": "N4",
+        "surface": "rear_connector",
+        "temperature_c": 88.95030198217694,
+        "sigma_m": 0.062,
+    },
+    "notes": ["Synthesized from historical SLD and rear thermal inspection."],
+}
+
+with open("/workspace/scene_spec.json", "w", encoding="utf-8") as f:
+    json.dump(scene_spec, f, indent=2, sort_keys=True)
+print("Wrote /workspace/scene_spec.json")
+```
+
+Execute one Python `code_execution` step to write `/workspace/scene_spec.json`, then stop and state that `/workspace/scene_spec.json` has been written.

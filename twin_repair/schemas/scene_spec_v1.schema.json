@@ -1,0 +1,211 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://blackboxdc.local/schemas/scene_spec_v1.schema.json",
+  "title": "BlackboxDC Twin Repair SceneSpec v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "case_id",
+    "source_revision",
+    "coordinate_system",
+    "viewport",
+    "racks",
+    "feeders",
+    "edges",
+    "hotspot",
+    "notes"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "scene_spec.v1"
+    },
+    "case_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64,
+      "pattern": "^[A-Za-z0-9_.-]+$"
+    },
+    "source_revision": {
+      "type": "string",
+      "enum": ["A", "B"]
+    },
+    "coordinate_system": {
+      "type": "string",
+      "const": "meters; floor=y0; rear=positive_z"
+    },
+    "viewport": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["width_px", "height_px", "camera_pose"],
+      "properties": {
+        "width_px": {
+          "type": "integer",
+          "const": 1280
+        },
+        "height_px": {
+          "type": "integer",
+          "const": 800
+        },
+        "camera_pose": {
+          "type": "string",
+          "enum": ["rear_inspection", "wiring_oblique"]
+        }
+      }
+    },
+    "racks": {
+      "type": "array",
+      "minItems": 4,
+      "maxItems": 4,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "rack_id",
+          "center_x_m",
+          "width_m",
+          "height_m",
+          "depth_m",
+          "connector_side",
+          "body_temp_c",
+          "connector_temp_c"
+        ],
+        "properties": {
+          "rack_id": {
+            "type": "string",
+            "enum": ["N1", "N2", "N3", "N4"]
+          },
+          "center_x_m": {
+            "type": "number",
+            "minimum": -0.5,
+            "maximum": 3.5
+          },
+          "width_m": {
+            "type": "number",
+            "minimum": 0.4,
+            "maximum": 1.0
+          },
+          "height_m": {
+            "type": "number",
+            "minimum": 1.5,
+            "maximum": 2.5
+          },
+          "depth_m": {
+            "type": "number",
+            "minimum": 0.6,
+            "maximum": 1.5
+          },
+          "connector_side": {
+            "type": "string",
+            "const": "rear"
+          },
+          "body_temp_c": {
+            "type": "number",
+            "minimum": 15.0,
+            "maximum": 60.0
+          },
+          "connector_temp_c": {
+            "type": "number",
+            "minimum": 15.0,
+            "maximum": 120.0
+          }
+        }
+      }
+    },
+    "feeders": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 2,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "feeder_id",
+          "anchor_x_m",
+          "anchor_y_m",
+          "limit_a",
+          "style"
+        ],
+        "properties": {
+          "feeder_id": {
+            "type": "string",
+            "enum": ["F1", "F2"]
+          },
+          "anchor_x_m": {
+            "type": "number",
+            "minimum": -2.0,
+            "maximum": 4.0
+          },
+          "anchor_y_m": {
+            "type": "number",
+            "minimum": 1.8,
+            "maximum": 3.0
+          },
+          "limit_a": {
+            "type": "number",
+            "enum": [44.0, 50.0]
+          },
+          "style": {
+            "type": "string",
+            "enum": ["blue", "orange", "amber", "cyan", "gold"]
+          }
+        }
+      }
+    },
+    "edges": {
+      "type": "array",
+      "minItems": 4,
+      "maxItems": 4,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["rack_id", "feeder_id"],
+        "properties": {
+          "rack_id": {
+            "type": "string",
+            "enum": ["N1", "N2", "N3", "N4"]
+          },
+          "feeder_id": {
+            "type": "string",
+            "enum": ["F1", "F2"]
+          }
+        }
+      }
+    },
+    "hotspot": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["rack_id", "surface", "temperature_c", "sigma_m"],
+      "properties": {
+        "rack_id": {
+          "type": "string",
+          "const": "N4"
+        },
+        "surface": {
+          "type": "string",
+          "const": "rear_connector"
+        },
+        "temperature_c": {
+          "type": "number",
+          "minimum": 50.0,
+          "maximum": 120.0
+        },
+        "sigma_m": {
+          "type": "number",
+          "minimum": 0.02,
+          "maximum": 0.25
+        }
+      }
+    },
+    "notes": {
+      "type": "array",
+      "maxItems": 8,
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 240
+      }
+    }
+  }
+}

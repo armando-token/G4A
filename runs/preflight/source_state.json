@@ -1,0 +1,52 @@
+{
+  "schema_version": "twin_repair.source_state.v1",
+  "recorded_at_utc": "2026-10-25T20:43:43Z",
+  "git_root": "/home/ubuntu/G4A",
+  "branch": "main",
+  "head_commit_sha": "c3362cd0be3a3eb26a16a48d44466dd67a8499d9",
+  "git_status_short": [
+    "?? twin_repair/"
+  ],
+  "environment": {
+    "os": "linux",
+    "python_version": "Python 3.12.3",
+    "python_executable": "/home/ubuntu/G4A/.venv/bin/python",
+    "node_version": "v18.19.1",
+    "chromium_version": "Google Chrome for Testing 156.0.8078.4"
+  },
+  "existing_modules": [
+    "blackbox/__init__.py",
+    "blackbox/agent_harness.py",
+    "blackbox/campaign.py",
+    "blackbox/contracts.py",
+    "blackbox/dashboard.py",
+    "blackbox/domain.py",
+    "blackbox/evidence.py",
+    "blackbox/fixture.py",
+    "blackbox/managed.py",
+    "blackbox/oracle.py",
+    "blackbox/preflight.py",
+    "blackbox/probe.py",
+    "blackbox/protocol.py",
+    "blackbox/render_sld.py",
+    "blackbox/scene_bridge.py",
+    "blackbox/static3d/capture.mjs",
+    "blackbox/static3d/scene.html",
+    "blackbox/static3d/scene.js",
+    "blackbox/track2_3d_loop.py",
+    "historical/__init__.py",
+    "historical/causal_fixture.py",
+    "historical/causal_pilot.py",
+    "historical/cli_pilot.py",
+    "historical/installation_contracts.py",
+    "historical/installation_lab.py",
+    "historical/installation_pilot.py",
+    "historical/legacy_thermal.py",
+    "historical/pilot.py"
+  ],
+  "baseline_tests": {
+    "command": ".venv/bin/pytest -q",
+    "exit_code": 0,
+    "status": "passed"
+  }
+}

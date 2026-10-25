@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BlackboxDC — 3D Twin-Repair &amp; Verification</title>
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <div id="app-shell" class="app-shell">
+    <!-- Top Header Bar -->
+    <header class="top-bar">
+      <div class="brand-group">
+        <span class="brand-mark">BLACKBOX DC</span>
+        <span class="brand-divider">/</span>
+        <span class="brand-subtitle">Self-Healing 3D Digital Twin &amp; Physics Verifier</span>
+      </div>
+      <div class="state-pills" role="navigation" aria-label="Workflow state">
+        <button id="nav-state-1" class="state-pill active" type="button" data-state="incident">1. Incident</button>
+        <button id="nav-state-2" class="state-pill" type="button" data-state="running">2. Running</button>
+        <button id="nav-state-3" class="state-pill" type="button" data-state="result">3. Result</button>
+        <button id="nav-state-4" class="state-pill" type="button" data-state="evidence">4. Evidence</button>
+      </div>
+      <div class="header-badges">
+        <span id="synthetic-badge" class="badge badge-synthetic">Synthetic case</span>
+        <span id="mode-badge" class="badge badge-mode">ready</span>
+      </div>
+    </header>
+
+    <!-- Main Stage Container (fits 1280x720 above the fold) -->
+    <main class="stage-container">
+      <!-- STATE 1: INCIDENT -->
+      <section id="view-incident" class="state-view active" aria-labelledby="incident-headline">
+        <div class="headline-row">
+          <h1 id="incident-headline" class="stage-headline">The connector is hot. Is the wiring map still correct?</h1>
+          <div class="case-controls secondary-control">
+            <button id="btn-switch-control-case" class="link-button" type="button">View no-change control case</button>
+          </div>
+        </div>
+
+        <div class="comparison-grid">
+          <article class="visual-card">
+            <div class="card-header">
+              <span class="card-title">Current as-built wiring diagram</span>
+              <span id="incident-sld-tag" class="card-tag">SLD</span>
+            </div>
+            <div class="image-frame">
+              <img id="img-incident-sld" alt="Current as-built single-line wiring diagram" src="" />
+            </div>
+          </article>
+
+          <article class="visual-card">
+            <div class="card-header">
+              <span class="card-title">Current 3D twin (built from older revision)</span>
+              <span id="incident-twin-tag" class="card-tag">3D Twin</span>
+            </div>
+            <div class="image-frame twin-frame">
+              <img id="img-incident-render0" alt="Initial 3D twin wiring render" src="" />
+              <div class="thermal-inset">
+                <img id="img-incident-thermal" alt="Rear thermal hotspot inspection" src="" />
+                <span id="thermal-inset-caption" class="thermal-caption">Rear IR Hotspot</span>
+              </div>
+            </div>
+          </article>
+        </div>
+
+        <div class="bottom-bar">
+          <p id="incident-caption" class="incident-caption">The old twin suggests moving an 8 A-equivalent workload to N3.</p>
+          <div class="cta-group">
+            <button id="btn-repair-twin" class="primary-cta" type="button">Repair 3D Twin &amp; Re-evaluate</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- STATE 2: RUNNING -->
+      <section id="view-running" class="state-view" aria-labelledby="running-headline" hidden>
+        <div class="headline-row">
+          <h2 id="running-headline" class="stage-headline">Verifying 3D Twin Wiring Against Current As-Built SLD</h2>
+          <span id="running-elapsed" class="elapsed-pill">Elapsed: --</span>
+        </div>
+
+        <ol class="status-rail" id="running-rail">
+          <li id="step-builder" class="rail-step active">
+            <span class="step-indicator">1</span>
+            <div class="step-body">
+              <div class="step-title">Builder agent compares the current diagram with the 3D twin</div>
+              <div id="step-builder-prov" class="step-prov">Waiting for builder environment...</div>
+            </div>
+          </li>
+          <li id="step-render1" class="rail-step">
+            <span class="step-indicator">2</span>
+            <div class="step-body">
+              <div class="step-title">Re-rendering the 3D scene from the proposed patch</div>
+              <div id="step-render1-prov" class="step-prov">Headless Three.js scene graph &amp; cable corridor projection</div>
+            </div>
+          </li>
+          <li id="step-critic" class="rail-step">
+            <span class="step-indicator">3</span>
+            <div class="step-body">
+              <div class="step-title">Critic agent checks the updated 3D render against the diagram</div>
+              <div id="step-critic-prov" class="step-prov">Isolated critic environment verification</div>
+            </div>
+          </li>
+          <li id="step-verifier" class="rail-step">
+            <span class="step-indicator">4</span>
+            <div class="step-body">
+              <div class="step-title">Argon verifies feeder currents and thermal limits</div>
+              <div id="step-verifier-prov" class="step-prov">Deterministic coupled electro-thermal counterfactual check</div>
+            </div>
+          </li>
+        </ol>
+      </section>
+
+      <!-- STATE 3: RESULT -->
+      <section id="view-result" class="state-view" aria-labelledby="result-caption" hidden>
+        <div class="headline-row">
+          <h2 id="result-caption" class="stage-headline">Argon corrected the twin's wiring before the operator relied on its old recommendation.</h2>
+          <div class="toggle-group">
+            <button id="btn-toggle-before" class="toggle-btn" type="button">Before Repair (render0)</button>
+            <button id="btn-toggle-after" class="toggle-btn active" type="button">After Repair (render1)</button>
+          </div>
+        </div>
+
+        <div class="comparison-grid">
+          <article class="visual-card">
+            <div class="card-header">
+              <span class="card-title">Current as-built wiring diagram</span>
+              <span id="result-graph-score" class="card-tag">Graph Score</span>
+            </div>
+            <div class="image-frame">
+              <img id="img-result-sld" alt="Current as-built single-line diagram" src="" />
+            </div>
+          </article>
+
+          <article class="visual-card">
+            <div class="card-header">
+              <span id="result-render-title" class="card-title">Updated 3D Twin Wiring Render</span>
+              <span id="result-terminal-badge" class="card-tag">Terminal State</span>
+            </div>
+            <div class="image-frame">
+              <img id="img-result-render" alt="3D twin wiring render" src="" />
+            </div>
+          </article>
+        </div>
+
+        <div class="result-strip">
+          <div id="banner-old-choice" class="choice-banner banner-danger">--</div>
+          <div id="banner-repaired-choice" class="choice-banner banner-safe">--</div>
+          <button id="btn-inspect-evidence" class="secondary-cta" type="button">Inspect Evidence</button>
+        </div>
+      </section>
+
+      <!-- STATE 4: EVIDENCE DRAWER -->
+      <section id="view-evidence" class="state-view" aria-labelledby="evidence-headline" hidden>
+        <div class="headline-row">
+          <h2 id="evidence-headline" class="stage-headline">Audit &amp; Provenance Evidence</h2>
+          <button id="btn-back-to-result" class="secondary-cta" type="button">Back to Result</button>
+        </div>
+
+        <div id="human-review-banner" class="approval-banner">
+          Human review required — verify against site documentation before any physical change.
+        </div>
+
+        <div class="evidence-grid">
+          <div class="evidence-panel">
+            <h3>Role Provenance &amp; Verification Gates</h3>
+            <dl class="kv-list">
+              <dt>Builder Environment / Session</dt>
+              <dd id="ev-builder-ids">--</dd>
+              <dt>Critic Environment / Session</dt>
+              <dd id="ev-critic-ids">--</dd>
+              <dt>Graph Alignment Score</dt>
+              <dd id="ev-graph-score">--</dd>
+              <dt>Visual Cable Corridor Delta</dt>
+              <dd id="ev-visual-delta">--</dd>
+              <dt>SHA-256 (render0 / render1)</dt>
+              <dd id="ev-sha256">--</dd>
+            </dl>
+          </div>
+
+          <div class="evidence-panel">
+            <h3>ScenePatch.v1 &amp; Argon Physics Summary</h3>
+            <pre id="ev-patch-json" class="code-box"></pre>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+  <script src="/app.js"></script>
+</body>
+</html>

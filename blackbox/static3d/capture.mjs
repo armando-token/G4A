@@ -193,6 +193,7 @@ function ensure24BitRgbPng(pngBuffer) {
  * Start a minimal local static HTTP server rooted at static3d directory.
  */
 async function startLocalStaticServer(rootDir) {
+  const rootDirResolved = path.resolve(rootDir);
   const mimeTypes = {
     '.html': 'text/html; charset=utf-8',
     '.js': 'text/javascript; charset=utf-8',
@@ -206,8 +207,9 @@ async function startLocalStaticServer(rootDir) {
     try {
       const reqUrl = new URL(req.url || '/', 'http://127.0.0.1');
       const relPath = decodeURIComponent(reqUrl.pathname === '/' ? '/scene.html' : reqUrl.pathname);
-      const absPath = path.resolve(rootDir, '.' + relPath);
-      if (!absPath.startsWith(path.resolve(rootDir))) {
+      const absPath = path.resolve(rootDirResolved, '.' + relPath);
+      const rel = path.relative(rootDirResolved, absPath);
+      if (rel.startsWith('..') || path.isAbsolute(rel)) {
         res.writeHead(403);
         res.end('Forbidden');
         return;
@@ -248,6 +250,7 @@ async function writeAtomic24BitPng(rawPngBuf, finalPath) {
 
 function parseCliArgs(argv) {
   const args = {
+    specPath: null,
     outDir: path.join(__dirname, 'renders'),
     rgbOut: null,
     thermalOut: null,
@@ -259,9 +262,22 @@ function parseCliArgs(argv) {
     modes: ['rgb', 'thermal']
   };
 
+  if (argv[2] === 'scene' && argv[3] && argv[4]) {
+    args.specPath = path.resolve(argv[3]);
+    args.outDir = path.resolve(argv[4]);
+    return args;
+  }
+
+  if (argv.length === 3 && argv[2] && !argv[2].startsWith('-')) {
+    args.outDir = path.resolve(argv[2]);
+    return args;
+  }
+
   for (let i = 2; i < argv.length; i++) {
     const token = argv[i];
-    if (token === '--out-dir' && argv[i + 1]) {
+    if (token === '--spec' && argv[i + 1]) {
+      args.specPath = path.resolve(argv[++i]);
+    } else if (token === '--out-dir' && argv[i + 1]) {
       args.outDir = path.resolve(argv[++i]);
     } else if (token === '--rgb-out' && argv[i + 1]) {
       args.rgbOut = path.resolve(argv[++i]);
@@ -325,6 +341,83 @@ export async function captureSceneRenders(options = {}) {
     );
     await page.evaluate(() => document.fonts.ready);
 
+    // Parameterized SceneSpec v1 capture path
+    if (config.specPath) {
+      const specBytes = await fs.readFile(config.specPath);
+      const specSha256 = crypto.createHash('sha256').update(specBytes).digest('hex');
+      const specObj = JSON.parse(specBytes.toString('utf-8'));
+
+      // 1. render_wiring.png (rgb mode, wiring_oblique pose)
+      const metaWiring = await page.evaluate(
+        (s) => window.renderScene('rgb', 'wiring_oblique', s),
+        specObj
+      );
+      const rawWiring = await page.screenshot({
+        type: 'png',
+        clip: { x: 0, y: 0, width: config.width, height: config.height }
+      });
+      const savedWiring = await writeAtomic24BitPng(
+        rawWiring,
+        path.join(config.outDir, 'render_wiring.png')
+      );
+
+      // 2. render_rgb_rear.png (rgb mode, rear_inspection pose)
+      const metaRgbRear = await page.evaluate(
+        () => window.renderScene('rgb', 'rear_inspection', null)
+      );
+      const rawRgbRear = await page.screenshot({
+        type: 'png',
+        clip: { x: 0, y: 0, width: config.width, height: config.height }
+      });
+      const savedRgbRear = await writeAtomic24BitPng(
+        rawRgbRear,
+        path.join(config.outDir, 'render_rgb_rear.png')
+      );
+
+      // 3. render_thermal_rear.png (thermal mode, rear_inspection pose)
+      const metaThermalRear = await page.evaluate(
+        () => window.renderScene('thermal', 'rear_inspection', null)
+      );
+      const rawThermalRear = await page.screenshot({
+        type: 'png',
+        clip: { x: 0, y: 0, width: config.width, height: config.height }
+      });
+      const savedThermalRear = await writeAtomic24BitPng(
+        rawThermalRear,
+        path.join(config.outDir, 'render_thermal_rear.png')
+      );
+
+      const renderMetaPayload = {
+        status: 'ok',
+        webgl_ok: true,
+        schema_version: 'render_meta.v1',
+        spec_sha256: specSha256,
+        source_revision: String(specObj.source_revision || 'A'),
+        case_id: String(specObj.case_id || ''),
+        edges: metaWiring.edges,
+        projected_cable_corridors: metaWiring.projected_cable_corridors,
+        hud_exclusion_bboxes_px: metaWiring.hud_exclusion_bboxes_px || [[0, 0, 360, 64]],
+        hotspot_roi: metaRgbRear.faultConnector,
+        camera_matrices: {
+          wiring_oblique: metaWiring.camera,
+          rear_inspection: metaRgbRear.camera
+        },
+        renders: {
+          'render_wiring.png': savedWiring,
+          'render_rgb_rear.png': savedRgbRear,
+          'render_thermal_rear.png': savedThermalRear
+        },
+        browserVersion,
+        executablePath
+      };
+
+      const metaFilePath = config.metaOut || path.join(config.outDir, 'render_meta.json');
+      const tmpMeta = `${metaFilePath}.${process.pid}.tmp.json`;
+      await fs.writeFile(tmpMeta, JSON.stringify(renderMetaPayload, null, 2) + '\n', 'utf-8');
+      await fs.rename(tmpMeta, metaFilePath);
+      return renderMetaPayload;
+    }
+
     const renders = [];
     const metadataByMode = {};
 
@@ -346,7 +439,6 @@ export async function captureSceneRenders(options = {}) {
 
       const saved = await writeAtomic24BitPng(rawShot, primaryPath);
 
-      // If --pose was explicitly requested, also write pose-named file for backward compatibility
       if (config.pose) {
         const posePath = path.join(config.outDir, `rear_aisle_${config.pose}_${mode}.png`);
         if (posePath !== primaryPath) {
@@ -430,12 +522,11 @@ export async function captureSceneRenders(options = {}) {
       metadataByMode
     };
 
-    if (config.metaOut) {
-      await fs.mkdir(path.dirname(config.metaOut), { recursive: true });
-      const tmpMeta = `${config.metaOut}.${process.pid}.tmp.json`;
-      await fs.writeFile(tmpMeta, JSON.stringify(resultPayload, null, 2) + '\n', 'utf-8');
-      await fs.rename(tmpMeta, config.metaOut);
-    }
+    const metaTarget = config.metaOut || path.join(config.outDir, 'render_meta.json');
+    await fs.mkdir(path.dirname(metaTarget), { recursive: true });
+    const tmpMeta = `${metaTarget}.${process.pid}.tmp.json`;
+    await fs.writeFile(tmpMeta, JSON.stringify(resultPayload, null, 2) + '\n', 'utf-8');
+    await fs.rename(tmpMeta, metaTarget);
 
     return resultPayload;
   } finally {

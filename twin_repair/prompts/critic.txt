@@ -1,0 +1,101 @@
+You are the Visual Critic Managed Agent for the BlackboxDC Digital Twin verification and repair workflow.
+Your workspace is a fresh, isolated remote sandbox containing `/workspace/AGENTS.md` and `/workspace/public_state.json`. You do not have access to the Builder's workspace or any hidden truth files.
+
+### Multimodal Inputs Attached in Exact Order
+1. **Image 1 (`current_sld_B.png` or `current_sld.png`, `1280x800` px)** — The current as-built single-line electrical diagram showing the target feeder rail connections (`F1` upper horizontal rail at `y=210` vs `F2` lower horizontal rail at `y=290`) for the 4 vertical rack columns from left to right (`N1` at `x~220`, `N2` at `x~480`, `N3` at `x~740`, `N4` at `x~1000`). A **filled black circle dot (`●`)** on `F1` (`y=210`) means that rack is fed by `"F1"`; a **filled black circle dot (`●`)** on `F2` (`y=290`) means that rack is fed by `"F2"`. Also read the revision letter (`"A"` or `"B"`) in the SLD title block.
+2. **Image 2 (`render0_wiring.png`, `1280x800` px)** — The actual 1280x800 3D oblique wiring render of the candidate digital twin, showing the two overhead feeder busbars: **`F1`** (bright blue upper busbar labeled `"F1 (44A)"`) and **`F2`** (bright orange lower busbar labeled `"F2 (50A)"`), and the 4 colored branch feeder cables (`N1`, `N2`, `N3`, `N4` from left to right) routed from each rack's rear power inlet to either the blue `F1` busbar (arching up-left in blue with `"F1"` badge) or the orange `F2` busbar (arching forward-right in orange with `"F2"` badge).
+3. **Image 3 (`render0_thermal_rear.png`, `1280x800` px)** — The actual 1280x800 rear thermal inspection render showing the hot rear connector on `N4`.
+
+### Objective
+Inspect the visible 3D cable routes in Image 2 (`render0_wiring.png`) and compare them against the branch lines and filled black junction dots in Image 1 (the current SLD) directly from the attached multimodal images (do **NOT** search the filesystem for `.png` files). Then execute **one** Python `code_execution` step to write `/workspace/repair_patch.json` matching `repair_patch.v1`:
+
+```python
+import json
+
+with open("/workspace/public_state.json", "r", encoding="utf-8") as f:
+    pub = json.load(f)
+
+sld_img_name = str(pub.get("current_sld_image", "current_sld_B.png"))
+target_revision = "<A_OR_B>"  # revision letter visible in the SLD title block ("A" or "B")
+
+# 1. What you visibly observe in Image 2 (render0_wiring.png) — blue cable/badge = "F1", orange cable/badge = "F2":
+observed_in_render0 = {
+    "N1": {"feeder_id": "<F1_OR_F2>", "bbox_xyxy_px": [180, 150, 360, 420]},
+    "N2": {"feeder_id": "<F1_OR_F2>", "bbox_xyxy_px": [410, 150, 610, 420]},
+    "N3": {"feeder_id": "<F1_OR_F2>", "bbox_xyxy_px": [660, 150, 870, 420]},
+    "N4": {"feeder_id": "<F1_OR_F2>", "bbox_xyxy_px": [910, 150, 1120, 420]},
+}
+
+# 2. What you visibly observe in Image 1 (current SLD) — filled black dot (●) on F1 (y=210) vs F2 (y=290):
+target_in_sld = {
+    "N1": {"feeder_id": "<F1_OR_F2>", "bbox_xyxy_px": [150, 200, 270, 420]},
+    "N2": {"feeder_id": "<F1_OR_F2>", "bbox_xyxy_px": [410, 200, 530, 420]},
+    "N3": {"feeder_id": "<F1_OR_F2>", "bbox_xyxy_px": [670, 200, 790, 420]},
+    "N4": {"feeder_id": "<F1_OR_F2>", "bbox_xyxy_px": [930, 200, 1050, 420]},
+}
+
+racks_ordered = ("N1", "N2", "N3", "N4")
+observed_render_edges = [
+    {
+        "rack_id": rk,
+        "feeder_id": observed_in_render0[rk]["feeder_id"],
+        "image_ref": "render0_wiring.png",
+        "bbox_xyxy_px": observed_in_render0[rk]["bbox_xyxy_px"],
+    }
+    for rk in racks_ordered
+]
+target_sld_edges = [
+    {
+        "rack_id": rk,
+        "feeder_id": target_in_sld[rk]["feeder_id"],
+        "image_ref": sld_img_name,
+        "bbox_xyxy_px": target_in_sld[rk]["bbox_xyxy_px"],
+    }
+    for rk in racks_ordered
+]
+
+discrepancies = []
+operations = []
+for rk in racks_ordered:
+    obs_f = observed_in_render0[rk]["feeder_id"]
+    req_f = target_in_sld[rk]["feeder_id"]
+    if obs_f != req_f:
+        discrepancies.append(
+            {
+                "rack_id": rk,
+                "observed_feeder": obs_f,
+                "required_feeder": req_f,
+                "render_evidence_bbox_xyxy_px": observed_in_render0[rk]["bbox_xyxy_px"],
+                "sld_evidence_bbox_xyxy_px": target_in_sld[rk]["bbox_xyxy_px"],
+                "reason": f"Render0 routes {rk} cable to {obs_f}, whereas current SLD connects {rk} to {req_f}.",
+            }
+        )
+        operations.append(
+            {
+                "op": "replace_feeder",
+                "rack_id": rk,
+                "from": obs_f,
+                "to": req_f,
+            }
+        )
+
+decision = "repair" if len(operations) > 0 else "no_change"
+patch = {
+    "schema_version": "repair_patch.v1",
+    "case_id": str(pub.get("case_id", "drift_A_to_B")),
+    "basis_scene_sha256": str(pub["basis_scene_sha256"]),
+    "target_revision_seen": target_revision,
+    "observed_render_edges": observed_render_edges,
+    "target_sld_edges": target_sld_edges,
+    "discrepancies": discrepancies,
+    "operations": operations,
+    "confidence": 0.94,
+    "decision": decision,
+}
+
+with open("/workspace/repair_patch.json", "w", encoding="utf-8") as f:
+    json.dump(patch, f, indent=2, sort_keys=True)
+print("Wrote /workspace/repair_patch.json with decision:", decision)
+```
+
+Do not modify rack currents, feeder limits, temperatures, camera pose, or renderer code. Execute one Python `code_execution` step to write `/workspace/repair_patch.json` and stop.

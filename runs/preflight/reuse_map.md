@@ -1,0 +1,19 @@
+# BlackboxDC Twin Repair — Phase A1 Source Audit & Reuse Map
+
+**Recorded UTC:** `2026-10-25T20:43:43Z`  
+**Repository Root:** `/home/ubuntu/G4A`  
+**Branch / HEAD:** `main` (`c3362cd0be3a3eb26a16a48d44466dd67a8499d9`)  
+**Runtime:** `Python 3.12.3` (`.venv/bin/python`), `Node v18.19.1`, `Google Chrome for Testing 156.0.8078.4`
+
+## Mapping of §0.2 Reference Components to Active Repository (`blackbox/*`)
+
+| Reference Component (§0.2) | Active Repository Equivalent | Inspected Signatures & Constants | Twin Repair Adapter / Extension Target |
+|---|---|---|---|
+| `blackbox_domain.py` | `blackbox/domain.py` | `RackParams`, `PDU`, `Migration`, `World`, `Trajectory`, `step_temperature(...)`, `apply_migration(world, migration)`, `simulate_world(world, migration=None)`, `TOTAL_WORLD_CURRENT_A = 68.0`, `DEFAULT_HORIZON_S = 180`, `DEFAULT_STEP_S = 10`, `DEFAULT_MIGRATION_AMPS = 8.0`, `DEFAULT_MAX_TEMP_C = 90.0` | Reused directly by `twin_repair/physics_adapter.py` (`compute_feeder_currents`, `evaluate_actions`, `recommended_action`) and `twin_repair/challenge.py` (`reference_case`). |
+| `visual_v2/fixture.py` | `blackbox/fixture.py` | `build_private_world(case_id, seed=0)`, `export_public_packet(world)`, `N4_T0_TEMP_C = 88.95030198217694`, `N4_SAFE_T180_TEMP_C = 52.5348072081335`, `DEFAULT_ALPHA_PER_C = 0.004`, `SENSOR_TO_RACK_CANONICAL`, `RACK_TO_SENSOR_CANONICAL` | Extended in `twin_repair/challenge.py` (`build_challenge_fixture` for `drift_A_to_B` and `control_A_to_A`, `scan_for_truth_leakage`). |
+| `visual_v2/sld.py` | `blackbox/render_sld.py` | `render_sld_png(case_id, output_path)`, `render_sld_svg(case_id)`, `parse_sld_png_topology(png_path)`, `RACK_COLUMNS = {"N1": 200, "N2": 460, "N3": 720, "N4": 980}`, `F1_BUS_Y = 210`, `F2_BUS_Y = 290` | Reused in `twin_repair/challenge.py` to generate `old_sld_A.png` (Revision A) and `current_sld_B.png` (Revision B / Control A) with title-block revision stamps and branch bounding boxes. |
+| `visual_v2/scene_bridge.py` | `blackbox/scene_bridge.py` | `capture_3d_rear_aisle(out_dir)`, `verify_visual_artifact(image_path)`, `verify_thermal_hotspot_alignment(thermal_png_path)`, `project_world_to_pixel(...)`, `EXPECTED_HOTSPOT_PIXEL_CENTER = (1110.36, 358.99)` | Extended in `twin_repair/render_bridge.py` and `twin_repair/verifier.py` (`verify_visual_cable_change`, `score_twin_repair_run`). |
+| `visual_v2/static3d/scene.js` | `blackbox/static3d/scene.js` | Three.js four-rack rear aisle scene (`1280×800`), thermal shader on `N4` rear connector `(2.57, 1.20, 0.555)` | Parameterized to load `SceneSpec v1`, draw overhead `F1`/`F2` buses and per-rack branch feeder cables, and support `wiring_oblique` and `rear_inspection` poses. |
+| `visual_v2/static3d/capture.mjs` | `blackbox/static3d/capture.mjs` | Playwright Chromium capture script producing `1280×800` 24-bit RGB PNGs | Extended to accept `scene <spec-path> <out-dir>` and output `render_wiring.png`, `render_rgb_rear.png`, `render_thermal_rear.png`, and `render_meta.json`. |
+| `file_pilot.ManagedFileRunner` | `blackbox/managed.py` | `ManagedInteractionAdapter`, `ManagedTurnResult`, `PairBudgetTracker`, official Interactions API (`agent="antigravity-preview-09-2026"`, `model="gemini-4-argon"`, `background=True`, `store=True`, `client.environments.files.download`) | Reused by `twin_repair/managed_roles.py` for isolated Builder (`/workspace/scene_spec.json`) and Critic (`/workspace/repair_patch.json`) Managed Agent turns. |
+| `visual_v2/contracts.py`, `orchestrator.py`, `report.py` | `blackbox/contracts.py`, `blackbox/campaign.py`, `blackbox/evidence.py`, `blackbox/oracle.py` | Strict JSON validation, campaign orchestration, immutable dossier export, and independent oracle scoring | New Twin Repair contracts in `twin_repair/contracts.py`, verifier in `twin_repair/verifier.py`, orchestrator in `twin_repair/orchestrator.py`, and report generator in `twin_repair/report.py`. |

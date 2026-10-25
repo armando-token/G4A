@@ -1,0 +1,217 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://blackboxdc.local/schemas/repair_patch_v1.schema.json",
+  "title": "BlackboxDC Twin Repair RepairPatch v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "case_id",
+    "basis_scene_sha256",
+    "target_revision_seen",
+    "observed_render_edges",
+    "target_sld_edges",
+    "discrepancies",
+    "operations",
+    "confidence",
+    "decision"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "repair_patch.v1"
+    },
+    "case_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64,
+      "pattern": "^[A-Za-z0-9_.-]+$"
+    },
+    "basis_scene_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "target_revision_seen": {
+      "type": "string",
+      "enum": ["A", "B", "UNKNOWN"]
+    },
+    "observed_render_edges": {
+      "type": "array",
+      "maxItems": 4,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["rack_id", "feeder_id", "image_ref", "bbox_xyxy_px"],
+        "properties": {
+          "rack_id": {
+            "type": "string",
+            "enum": ["N1", "N2", "N3", "N4"]
+          },
+          "feeder_id": {
+            "type": "string",
+            "enum": ["F1", "F2"]
+          },
+          "image_ref": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "bbox_xyxy_px": {
+            "type": "array",
+            "minItems": 4,
+            "maxItems": 4,
+            "items": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 1280
+            }
+          }
+        }
+      }
+    },
+    "target_sld_edges": {
+      "type": "array",
+      "maxItems": 4,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["rack_id", "feeder_id", "image_ref", "bbox_xyxy_px"],
+        "properties": {
+          "rack_id": {
+            "type": "string",
+            "enum": ["N1", "N2", "N3", "N4"]
+          },
+          "feeder_id": {
+            "type": "string",
+            "enum": ["F1", "F2"]
+          },
+          "image_ref": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "bbox_xyxy_px": {
+            "type": "array",
+            "minItems": 4,
+            "maxItems": 4,
+            "items": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 1280
+            }
+          }
+        }
+      }
+    },
+    "discrepancies": {
+      "type": "array",
+      "maxItems": 4,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "rack_id",
+          "observed_feeder",
+          "required_feeder",
+          "render_evidence_bbox_xyxy_px",
+          "sld_evidence_bbox_xyxy_px",
+          "reason"
+        ],
+        "properties": {
+          "rack_id": {
+            "type": "string",
+            "enum": ["N1", "N2", "N3", "N4"]
+          },
+          "observed_feeder": {
+            "type": "string",
+            "enum": ["F1", "F2"]
+          },
+          "required_feeder": {
+            "type": "string",
+            "enum": ["F1", "F2"]
+          },
+          "render_evidence_bbox_xyxy_px": {
+            "type": "array",
+            "minItems": 4,
+            "maxItems": 4,
+            "items": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 1280
+            }
+          },
+          "sld_evidence_bbox_xyxy_px": {
+            "type": "array",
+            "minItems": 4,
+            "maxItems": 4,
+            "items": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 1280
+            }
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 320
+          }
+        }
+      }
+    },
+    "operations": {
+      "type": "array",
+      "maxItems": 4,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["op", "rack_id", "from", "to"],
+        "properties": {
+          "op": {
+            "type": "string",
+            "const": "replace_feeder"
+          },
+          "rack_id": {
+            "type": "string",
+            "enum": ["N1", "N2", "N3", "N4"]
+          },
+          "from": {
+            "type": "string",
+            "enum": ["F1", "F2"]
+          },
+          "to": {
+            "type": "string",
+            "enum": ["F1", "F2"]
+          }
+        }
+      }
+    },
+    "confidence": {
+      "type": "number",
+      "minimum": 0.0,
+      "maximum": 1.0
+    },
+    "decision": {
+      "type": "string",
+      "enum": ["repair", "no_change", "abstain"]
+    },
+    "reason": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 320
+    },
+    "abstain_reason": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 320
+    },
+    "notes": {
+      "type": "array",
+      "maxItems": 8,
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 240
+      }
+    }
+  }
+}

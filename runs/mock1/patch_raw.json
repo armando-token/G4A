@@ -1,0 +1,152 @@
+{
+  "basis_scene_sha256": "43460ccf16727f5e7828df5a615dc843c005f2fb5328ac5dc4e90248d078e322",
+  "case_id": "drift_A_to_B",
+  "confidence": 0.94,
+  "decision": "repair",
+  "discrepancies": [
+    {
+      "observed_feeder": "F1",
+      "rack_id": "N2",
+      "reason": "The cable visibly reaches F1 blue bus in render0_wiring.png, but current_sld_B.png routes N2 to F2.",
+      "render_evidence_bbox_xyxy_px": [
+        451,
+        122,
+        557,
+        477
+      ],
+      "required_feeder": "F2",
+      "sld_evidence_bbox_xyxy_px": [
+        420,
+        200,
+        500,
+        420
+      ]
+    },
+    {
+      "observed_feeder": "F2",
+      "rack_id": "N3",
+      "reason": "The cable visibly reaches F2 orange bus in render0_wiring.png, but current_sld_B.png routes N3 to F1.",
+      "render_evidence_bbox_xyxy_px": [
+        796,
+        191,
+        879,
+        477
+      ],
+      "required_feeder": "F1",
+      "sld_evidence_bbox_xyxy_px": [
+        680,
+        200,
+        760,
+        420
+      ]
+    }
+  ],
+  "observed_render_edges": [
+    {
+      "bbox_xyxy_px": [
+        192,
+        122,
+        283,
+        477
+      ],
+      "feeder_id": "F1",
+      "image_ref": "render0_wiring.png",
+      "rack_id": "N1"
+    },
+    {
+      "bbox_xyxy_px": [
+        451,
+        122,
+        557,
+        477
+      ],
+      "feeder_id": "F1",
+      "image_ref": "render0_wiring.png",
+      "rack_id": "N2"
+    },
+    {
+      "bbox_xyxy_px": [
+        796,
+        191,
+        879,
+        477
+      ],
+      "feeder_id": "F2",
+      "image_ref": "render0_wiring.png",
+      "rack_id": "N3"
+    },
+    {
+      "bbox_xyxy_px": [
+        1071,
+        191,
+        1157,
+        477
+      ],
+      "feeder_id": "F2",
+      "image_ref": "render0_wiring.png",
+      "rack_id": "N4"
+    }
+  ],
+  "operations": [
+    {
+      "from": "F1",
+      "op": "replace_feeder",
+      "rack_id": "N2",
+      "to": "F2"
+    },
+    {
+      "from": "F2",
+      "op": "replace_feeder",
+      "rack_id": "N3",
+      "to": "F1"
+    }
+  ],
+  "schema_version": "repair_patch.v1",
+  "target_revision_seen": "B",
+  "target_sld_edges": [
+    {
+      "bbox_xyxy_px": [
+        160,
+        200,
+        240,
+        420
+      ],
+      "feeder_id": "F1",
+      "image_ref": "current_sld_B.png",
+      "rack_id": "N1"
+    },
+    {
+      "bbox_xyxy_px": [
+        420,
+        200,
+        500,
+        420
+      ],
+      "feeder_id": "F2",
+      "image_ref": "current_sld_B.png",
+      "rack_id": "N2"
+    },
+    {
+      "bbox_xyxy_px": [
+        680,
+        200,
+        760,
+        420
+      ],
+      "feeder_id": "F1",
+      "image_ref": "current_sld_B.png",
+      "rack_id": "N3"
+    },
+    {
+      "bbox_xyxy_px": [
+        940,
+        200,
+        1020,
+        420
+      ],
+      "feeder_id": "F2",
+      "image_ref": "current_sld_B.png",
+      "rack_id": "N4"
+    }
+  ]
+}
