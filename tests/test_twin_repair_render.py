@@ -198,8 +198,12 @@ def test_web_app_routes_and_security_gates(tmp_path: Path, monkeypatch: pytest.M
         assert resp_bad.status_code == 403, f"Expected 403 for {forbidden_asset}, got {resp_bad.status_code}"
 
     # 7. Without credentials, POST /runs with mode="live" MUST fail closed (never fabricate PASS or argon_verified)
+    import sys
+
+    web_app_mod = sys.modules["twin_repair.web.app"]
     monkeypatch.setattr(
-        "twin_repair.web.app.resolve_auth_config",
+        web_app_mod,
+        "resolve_auth_config",
         lambda: {"mode": "mock", "ready": False, "reason": "No GEMINI_API_KEY configured"},
     )
     r_no_creds = client.post("/runs", json={"case_id": "drift_A_to_B", "mode": "live"})
@@ -211,11 +215,13 @@ def test_web_app_routes_and_security_gates(tmp_path: Path, monkeypatch: pytest.M
 
     # 8. With credentials present, public live quota (2 runs allowed without judge code, 3rd returns HTTP 429, judge code overrides)
     monkeypatch.setattr(
-        "twin_repair.web.app.resolve_auth_config",
+        web_app_mod,
+        "resolve_auth_config",
         lambda: {"mode": "ai_studio", "ready": True, "api_key_present": True},
     )
     monkeypatch.setattr(
-        "twin_repair.web.app.run_twin_repair",
+        web_app_mod,
+        "run_twin_repair",
         lambda case_dir, **kw: dict(live_rec_json["result"], run_id=kw.get("run_id", "stub")),
     )
     r_live1 = client.post("/runs", json={"case_id": "drift_A_to_B", "mode": "live"})
