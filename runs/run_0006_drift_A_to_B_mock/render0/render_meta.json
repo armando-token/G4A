@@ -1,0 +1,53 @@
+{
+  "schema_version": "RenderMeta.v1",
+  "case_id": "drift_A_to_B",
+  "revision": "A",
+  "hotspot_bbox_2d": [
+    765,
+    290,
+    825,
+    350
+  ],
+  "projected_cable_corridors": {
+    "N1": [
+      [
+        210,
+        80,
+        390,
+        460
+      ]
+    ],
+    "N2": [
+      [
+        430,
+        80,
+        610,
+        460
+      ]
+    ],
+    "N3": [
+      [
+        650,
+        80,
+        830,
+        460
+      ]
+    ],
+    "N4": [
+      [
+        870,
+        80,
+        1050,
+        460
+      ]
+    ]
+  },
+  "revision_hud_Mask_rects": [
+    [
+      0,
+      0,
+      360,
+      64
+    ]
+  ]
+}

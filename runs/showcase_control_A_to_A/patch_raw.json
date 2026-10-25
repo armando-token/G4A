@@ -1,0 +1,102 @@
+{
+  "basis_scene_sha256": "99134d7b1ed07133d9404e517e274dacb8614a7bf5fc64ab69834cb7fd61486a",
+  "case_id": "control_A_to_A",
+  "confidence": 0.96,
+  "decision": "no_change",
+  "discrepancies": [],
+  "observed_render_edges": [
+    {
+      "bbox_xyxy_px": [
+        192,
+        122,
+        283,
+        477
+      ],
+      "feeder_id": "F1",
+      "image_ref": "render0_wiring.png",
+      "rack_id": "N1"
+    },
+    {
+      "bbox_xyxy_px": [
+        451,
+        122,
+        557,
+        477
+      ],
+      "feeder_id": "F1",
+      "image_ref": "render0_wiring.png",
+      "rack_id": "N2"
+    },
+    {
+      "bbox_xyxy_px": [
+        796,
+        191,
+        879,
+        477
+      ],
+      "feeder_id": "F2",
+      "image_ref": "render0_wiring.png",
+      "rack_id": "N3"
+    },
+    {
+      "bbox_xyxy_px": [
+        1071,
+        191,
+        1157,
+        477
+      ],
+      "feeder_id": "F2",
+      "image_ref": "render0_wiring.png",
+      "rack_id": "N4"
+    }
+  ],
+  "operations": [],
+  "schema_version": "repair_patch.v1",
+  "target_revision_seen": "A",
+  "target_sld_edges": [
+    {
+      "bbox_xyxy_px": [
+        160,
+        200,
+        240,
+        420
+      ],
+      "feeder_id": "F1",
+      "image_ref": "current_sld_B.png",
+      "rack_id": "N1"
+    },
+    {
+      "bbox_xyxy_px": [
+        420,
+        200,
+        500,
+        420
+      ],
+      "feeder_id": "F1",
+      "image_ref": "current_sld_B.png",
+      "rack_id": "N2"
+    },
+    {
+      "bbox_xyxy_px": [
+        680,
+        200,
+        760,
+        420
+      ],
+      "feeder_id": "F2",
+      "image_ref": "current_sld_B.png",
+      "rack_id": "N3"
+    },
+    {
+      "bbox_xyxy_px": [
+        940,
+        200,
+        1020,
+        420
+      ],
+      "feeder_id": "F2",
+      "image_ref": "current_sld_B.png",
+      "rack_id": "N4"
+    }
+  ]
+}
