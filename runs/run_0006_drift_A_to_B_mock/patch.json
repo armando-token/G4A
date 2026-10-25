@@ -1,0 +1,54 @@
+{
+  "schema_version": "ScenePatch.v1",
+  "case_id": "drift_A_to_B",
+  "decision": "repair",
+  "discrepancies": [
+    {
+      "rack_id": "N2",
+      "stale_feeders": [
+        "F2"
+      ],
+      "current_feeders": [
+        "F1",
+        "F2"
+      ],
+      "reason": "Current SLD revision B shows N2 dual-fed from F1 and F2 (redundant 50/50 split)."
+    },
+    {
+      "rack_id": "N3",
+      "stale_feeders": [
+        "F2"
+      ],
+      "current_feeders": [
+        "F1"
+      ],
+      "reason": "Current SLD revision B shows N3 re-homed from F2 to F1."
+    }
+  ],
+  "operations": [
+    {
+      "op": "set_rack_feeders",
+      "rack_id": "N2",
+      "feeders": [
+        "F1",
+        "F2"
+      ],
+      "redundancy_split": {
+        "F1": 0.5,
+        "F2": 0.5
+      }
+    },
+    {
+      "op": "set_rack_feeders",
+      "rack_id": "N3",
+      "feeders": [
+        "F1"
+      ],
+      "redundancy_split": {
+        "F1": 1.0
+      }
+    }
+  ],
+  "recommended_receiver": "N2",
+  "rationale": "Moving 8 A from N4 to N3 would overload F1 (48.0/44.0 A); moving 8 A to dual-fed N2 keeps F1 at 40.0/44.0 A and F2 at 28.0/50.0 A."
+}

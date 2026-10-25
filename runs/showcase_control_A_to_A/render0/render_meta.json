@@ -1,0 +1,319 @@
+{
+  "browserVersion": "156.0.8078.4",
+  "camera_matrices": {
+    "rear_inspection": {
+      "aspect": 1.6,
+      "far": 25,
+      "fov": 43,
+      "lookAt": [
+        1.23,
+        1.08,
+        0.5
+      ],
+      "matrixWorld": [
+        1,
+        0,
+        0,
+        0,
+        0,
+        0.998532,
+        -0.054158,
+        0,
+        0,
+        0.054158,
+        0.998532,
+        0,
+        1.23,
+        1.24,
+        3.45,
+        1
+      ],
+      "near": 0.1,
+      "position": [
+        1.23,
+        1.24,
+        3.45
+      ],
+      "projectionMatrix": [
+        1.586655,
+        0,
+        0,
+        0,
+        0,
+        2.538648,
+        0,
+        0,
+        0,
+        0,
+        -1.008032,
+        -1,
+        0,
+        0,
+        -0.200803,
+        0
+      ]
+    },
+    "wiring_oblique": {
+      "aspect": 1.6,
+      "far": 25,
+      "fov": 43,
+      "lookAt": [
+        1.23,
+        1.55,
+        0.4
+      ],
+      "matrixWorld": [
+        1,
+        0,
+        0,
+        0,
+        0,
+        0.999149,
+        -0.041235,
+        0,
+        0,
+        0.041235,
+        0.999149,
+        0,
+        1.23,
+        1.68,
+        3.55,
+        1
+      ],
+      "near": 0.1,
+      "position": [
+        1.23,
+        1.68,
+        3.55
+      ],
+      "projectionMatrix": [
+        1.586655,
+        0,
+        0,
+        0,
+        0,
+        2.538648,
+        0,
+        0,
+        0,
+        0,
+        -1.008032,
+        -1,
+        0,
+        0,
+        -0.200803,
+        0
+      ]
+    }
+  },
+  "case_id": "control_A_to_A",
+  "edges": {
+    "N1": "F1",
+    "N2": "F1",
+    "N3": "F2",
+    "N4": "F2"
+  },
+  "executablePath": "/usr/local/bin/chromium",
+  "files": {
+    "render_rgb_rear.png": {
+      "bytes": 165828,
+      "height": 800,
+      "path": "/home/ubuntu/G4A/runs/control_mock1/render0/render_rgb_rear.png",
+      "pixel_std": 30.346,
+      "sha256": "2dba166783abd4bbde527750f21713f39f63a57daf0cefcf6dfb26a3f6fe28b1",
+      "width": 1280
+    },
+    "render_thermal_rear.png": {
+      "bytes": 39407,
+      "height": 800,
+      "path": "/home/ubuntu/G4A/runs/control_mock1/render0/render_thermal_rear.png",
+      "pixel_std": 36.565,
+      "sha256": "d7d2943ae3b93a0fb522cbce9b84513dc866066a52796ede8c2951787f3b7c27",
+      "width": 1280
+    },
+    "render_wiring.png": {
+      "bytes": 141771,
+      "height": 800,
+      "path": "/home/ubuntu/G4A/runs/control_mock1/render0/render_wiring.png",
+      "pixel_std": 34.521,
+      "sha256": "878ea0b344dc8d728d250b3ffd08c815dc75c1361d7b8b0bba0588da19e97cf9",
+      "width": 1280
+    }
+  },
+  "hotspot_roi": {
+    "peakTempC": 88.95030198217694,
+    "projectedPixelBBox": [
+      1079,
+      325,
+      1143,
+      393
+    ],
+    "projectedPixelCenter": [
+      1110.36,
+      358.99
+    ],
+    "rackId": "N4",
+    "sigmaM": 0.062,
+    "size": [
+      0.15,
+      0.19,
+      0.06
+    ],
+    "worldCenter": [
+      2.57,
+      1.2,
+      0.555
+    ]
+  },
+  "hud_exclusion_bboxes_px": [
+    [
+      0,
+      0,
+      360,
+      64
+    ]
+  ],
+  "out_dir": "/home/ubuntu/G4A/runs/control_mock1/render0",
+  "projected_cable_corridors": {
+    "N1": {
+      "bbox_xyxy_px": [
+        192,
+        122,
+        283,
+        477
+      ],
+      "feeder_id": "F1",
+      "rack_id": "N1",
+      "waypoints_px": [
+        [
+          264.62,
+          458.72
+        ],
+        [
+          224.97,
+          358.09
+        ],
+        [
+          210.59,
+          243.48
+        ],
+        [
+          213.04,
+          139.75
+        ]
+      ]
+    },
+    "N2": {
+      "bbox_xyxy_px": [
+        451,
+        122,
+        557,
+        477
+      ],
+      "feeder_id": "F1",
+      "rack_id": "N2",
+      "waypoints_px": [
+        [
+          539.45,
+          458.72
+        ],
+        [
+          492.94,
+          358.09
+        ],
+        [
+          471.42,
+          243.48
+        ],
+        [
+          468.59,
+          139.75
+        ]
+      ]
+    },
+    "N3": {
+      "bbox_xyxy_px": [
+        796,
+        191,
+        879,
+        477
+      ],
+      "feeder_id": "F2",
+      "rack_id": "N3",
+      "waypoints_px": [
+        [
+          814.28,
+          458.72
+        ],
+        [
+          839.66,
+          385.19
+        ],
+        [
+          857.41,
+          290.09
+        ],
+        [
+          860.8,
+          208.5
+        ]
+      ]
+    },
+    "N4": {
+      "bbox_xyxy_px": [
+        1071,
+        191,
+        1157,
+        477
+      ],
+      "feeder_id": "F2",
+      "rack_id": "N4",
+      "waypoints_px": [
+        [
+          1089.11,
+          458.72
+        ],
+        [
+          1117.15,
+          385.19
+        ],
+        [
+          1135.98,
+          290.09
+        ],
+        [
+          1139.36,
+          208.5
+        ]
+      ]
+    }
+  },
+  "registration_error_px": 0.608,
+  "registration_ok": true,
+  "renders": {
+    "render_rgb_rear.png": {
+      "bytes": 165828,
+      "path": "/home/ubuntu/G4A/runs/control_mock1/render0/render_rgb_rear.png",
+      "sha256": "2dba166783abd4bbde527750f21713f39f63a57daf0cefcf6dfb26a3f6fe28b1"
+    },
+    "render_thermal_rear.png": {
+      "bytes": 39407,
+      "path": "/home/ubuntu/G4A/runs/control_mock1/render0/render_thermal_rear.png",
+      "sha256": "d7d2943ae3b93a0fb522cbce9b84513dc866066a52796ede8c2951787f3b7c27"
+    },
+    "render_wiring.png": {
+      "bytes": 141771,
+      "path": "/home/ubuntu/G4A/runs/control_mock1/render0/render_wiring.png",
+      "sha256": "878ea0b344dc8d728d250b3ffd08c815dc75c1361d7b8b0bba0588da19e97cf9"
+    }
+  },
+  "schema_version": "render_meta.v1",
+  "source_revision": "A",
+  "spec_sha256": "99134d7b1ed07133d9404e517e274dacb8614a7bf5fc64ab69834cb7fd61486a",
+  "status": "ok",
+  "thermal_peak_xy_px": [
+    1110.0,
+    358.5
+  ],
+  "webgl_ok": true
+}

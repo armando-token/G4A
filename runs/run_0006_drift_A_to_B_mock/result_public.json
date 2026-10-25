@@ -1,0 +1,170 @@
+{
+  "schema_version": "twin_repair_result_public.v1",
+  "run_id": "run_0006_drift_A_to_B_mock",
+  "case_id": "drift_A_to_B",
+  "provider_mode": "mock",
+  "source": "fixture",
+  "is_simulated_mock": true,
+  "is_replay": false,
+  "prepared_builder": false,
+  "terminal_state": "PASS",
+  "passed": true,
+  "workflow_passed": true,
+  "builder_completed": true,
+  "critic_completed": true,
+  "argon_verified": true,
+  "distinct_environments": true,
+  "render0_valid": true,
+  "patch_valid": true,
+  "render1_valid": true,
+  "cable_pixels_changed": true,
+  "graph_improved": true,
+  "physics_safe": true,
+  "human_review_required": true,
+  "gates": {
+    "builder_completed": true,
+    "critic_completed": true,
+    "argon_verified": true,
+    "distinct_environments": true,
+    "render0_valid": true,
+    "patch_valid": true,
+    "render1_valid": true,
+    "cable_pixels_changed": true,
+    "graph_improved": true,
+    "physics_safe": true,
+    "human_review_required": true
+  },
+  "headlines": {
+    "incident_headline": "The connector is hot. Is the wiring map still correct?",
+    "incident_caption": "The old twin suggests moving an 8 A-equivalent workload to N3.",
+    "result_caption": "Argon corrected the twin's wiring before the operator relied on its old recommendation.",
+    "old_choice_banner": "Old choice N3: F1 = 48/44 A (over limit)",
+    "repaired_choice_banner": "Repaired choice N2: F1 = 40/44 A, F2 = 28/50 A (N4 180s = 52.53 \u00b0C)",
+    "badge": "Synthetic case",
+    "approval_banner": "Human review required \u2014 verify against site documentation before any physical change."
+  },
+  "graph_score": {
+    "before": "2/4",
+    "after": "4/4",
+    "before_correct": 2,
+    "after_correct": 4,
+    "total_edges": 4,
+    "summary": "2/4 -> 4/4"
+  },
+  "action_summary": {
+    "stale_recommended_receiver": "N3",
+    "repaired_recommended_receiver": "N2",
+    "n3_f1_current_a": 48.0,
+    "n3_f1_limit_a": 44.0,
+    "n2_f1_current_a": 40.0,
+    "n2_f1_limit_a": 44.0,
+    "n2_f2_current_a": 28.0,
+    "n2_f2_limit_a": 50.0,
+    "n4_repaired_temp_180s_c": 52.53,
+    "old_choice_text": "N3: F1 = 48.0/44.0 A",
+    "repaired_choice_text": "N2: F1 = 40.0/44.0 A, F2 = 28.0/50.0 A, N4(180s) = 52.53\u00b0C"
+  },
+  "visual_verification": {
+    "cable_pixels_changed": true,
+    "changed_Pixels_n2_corridor": 8326,
+    "changed_pixels_n3_corridor": 8502,
+    "render0_wiring_sha256": "2e3ee9c735af1e6ebc0ca28b1fd839e2070c27c3916ca29f7212ee5c4a1c9f67",
+    "render1_wiring_sha256": "6a884887df49031758f0ce4cbf9bcd9dcf5bd0424dd662363aa872b5831835b4",
+    "current_sld_sha256": "0fcb969797f968e9033f2f881df47c4da497857cab2168788fa36a62a3084033",
+    "hotspot_registration_px": 0.61,
+    "hotspot_iou": 0.98
+  },
+  "patch": {
+    "schema_version": "ScenePatch.v1",
+    "case_id": "drift_A_to_B",
+    "decision": "repair",
+    "discrepancies": [
+      {
+        "rack_id": "N2",
+        "stale_feeders": [
+          "F2"
+        ],
+        "current_feeders": [
+          "F1",
+          "F2"
+        ],
+        "reason": "Current SLD revision B shows N2 dual-fed from F1 and F2 (redundant 50/50 split)."
+      },
+      {
+        "rack_id": "N3",
+        "stale_feeders": [
+          "F2"
+        ],
+        "current_feeders": [
+          "F1"
+        ],
+        "reason": "Current SLD revision B shows N3 re-homed from F2 to F1."
+      }
+    ],
+    "operations": [
+      {
+        "op": "set_rack_feeders",
+        "rack_id": "N2",
+        "feeders": [
+          "F1",
+          "F2"
+        ],
+        "redundancy_split": {
+          "F1": 0.5,
+          "F2": 0.5
+        }
+      },
+      {
+        "op": "set_rack_feeders",
+        "rack_id": "N3",
+        "feeders": [
+          "F1"
+        ],
+        "redundancy_split": {
+          "F1": 1.0
+        }
+      }
+    ],
+    "recommended_receiver": "N2",
+    "rationale": "Moving 8 A from N4 to N3 would overload F1 (48.0/44.0 A); moving 8 A to dual-fed N2 keeps F1 at 40.0/44.0 A and F2 at 28.0/50.0 A."
+  },
+  "roles": {
+    "builder": {
+      "role": "builder",
+      "environment_id": "env_builder_run_0006_drift_A_to_B_mock",
+      "agent_id": "agent_builder_run_0006_drift_A_to_B_mock",
+      "session_id": "sess_builder_run_0006_drift_A_to_B_mock",
+      "model": "gemini-3.1-pro-preview",
+      "Thinking_level": "HIGH"
+    },
+    "critic": {
+      "role": "critic",
+      "environment_id": "env_critic_run_0006_drift_A_to_B_mock",
+      "agent_id": "agent_critic_run_0006_drift_A_to_B_mock",
+      "session_id": "sess_critic_run_0006_drift_A_to_B_mock",
+      "model": "gemini-3.1-pro-preview",
+      "thinking_level": "LOW"
+    }
+  },
+  "timing_spans_s": {
+    "render0": 0.42,
+    "builder": 0.18,
+    "render1": 0.41,
+    "critic": 0.14,
+    "verifier": 0.08
+  },
+  "total_elapsed_s": 1.23,
+  "token_usage": {
+    "builder": {
+      "prompt_tokens": 1120,
+      "completion_tokens": 340,
+      "total_tokens": 1460
+    },
+    "critic": {
+      "prompt_tokens": 980,
+      "completion_tokens": 210,
+      "total_tokens": 1190
+    }
+  },
+  "generated_at_utc": "2026-10-25T21:16:56Z"
+}

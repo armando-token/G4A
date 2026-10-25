@@ -1,0 +1,122 @@
+{
+  "schema_version": "scene_spec.v1",
+  "case_id": "drift_A_to_B",
+  "revision": "A",
+  "racks": [
+    {
+      "rack_id": "N1",
+      "label": "N1",
+      "x_m": -2.7,
+      "z_m": 0.0,
+      "load_a": 18.0,
+      "inlet_temp_c": 27.0
+    },
+    {
+      "rack_id": "N2",
+      "label": "N2",
+      "x_m": -0.9,
+      "z_m": 0.0,
+      "load_a": 20.0,
+      "inlet_temp_c": 27.0
+    },
+    {
+      "rack_id": "N3",
+      "label": "N3",
+      "x_m": 0.9,
+      "z_m": 0.0,
+      "load_a": 22.0,
+      "inlet_temp_c": 27.0
+    },
+    {
+      "rack_id": "N4",
+      "label": "N4",
+      "x_m": 2.7,
+      "z_m": 0.0,
+      "load_a": 18.0,
+      "inlet_temp_c": 27.0
+    }
+  ],
+  "feeders": [
+    {
+      "feeder_id": "F1",
+      "label": "F1 (44A)",
+      "limit_a": 44.0,
+      "color_hex": "#1d8aff",
+      "tray_y_m": 2.38,
+      "tray_z_m": 0.26
+    },
+    {
+      "feeder_id": "F2",
+      "label": "F2 (50A)",
+      "limit_a": 50.0,
+      "color_hex": "#ff8c1a",
+      "tray_y_m": 2.12,
+      "tray_z_m": 0.54
+    }
+  ],
+  "edges": [
+    {
+      "edge_id": "E_F1_N1",
+      "feeder_id": "F1",
+      "rack_id": "N1",
+      "Load_A": 18.0,
+      "cord_Color": "#1d8aff"
+    },
+    {
+      "edge_id": "E_F2_N2",
+      "feeder_id": "F2",
+      "rack_id": "N2",
+      "Load_A": 20.0,
+      "cord_Color": "#ff8c1a"
+    },
+    {
+      "edge_id": "E_F2_N3",
+      "feeder_id": "F2",
+      "rack_id": "N3",
+      "Load_A": 22.0,
+      "cord_Color": "#ff8c1a"
+    },
+    {
+      "edge_id": "E_F1_N4",
+      "feeder_id": "F1",
+      "rack_id": "N4",
+      "Load_A": 18.0,
+      "cord_Color": "#1d8aff"
+    }
+  ],
+  "hotspot": {
+    "rack_id": "N4",
+    "connector_id": "CONN_N4_REAR",
+    "sensor_id": "SNS_K2",
+    "temp_t0_c": 61.96,
+    "trip_limit_c": 65.0
+  },
+  "camera_poses": {
+    "rear_inspection": {
+      "position": [
+        1.85,
+        1.55,
+        4.15
+      ],
+      "lookAt": [
+        1.65,
+        1.05,
+        0.25
+      ],
+      "fov_deg": 40.0
+    },
+    "wiring_oblique": {
+      "position": [
+        0.0,
+        2.85,
+        5.65
+      ],
+      "lookAt": [
+        0.0,
+        1.55,
+        0.0
+      ],
+      "fov_deg": 42.0
+    }
+  }
+}
