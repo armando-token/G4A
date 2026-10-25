@@ -17,7 +17,7 @@ from __future__ import annotations
 import hashlib
 import math
 from pathlib import Path
-from typing import Any, Dict, Iterator, Optional, Set, Tuple
+from typing import Any, Dict, Iterator, Mapping, Optional, Set, Tuple
 import xml.etree.ElementTree as ET
 
 from PIL import Image, ImageDraw, ImageFont
@@ -127,13 +127,20 @@ def get_case_sld_mapping(case_id: str) -> Dict[str, str]:
     raise ValueError(f"Unsupported case_id for SLD rendering: {case_id!r}")
 
 
-def render_sld_svg(case_id: str) -> str:
+def _validate_explicit_mapping(mapping: Mapping[str, str]) -> Dict[str, str]:
+    out = {str(k): str(v) for k, v in dict(mapping).items()}
+    if sorted(out) != ["N1", "N2", "N3", "N4"] or any(v not in ("F1", "F2") for v in out.values()):
+        raise ValueError(f"Explicit SLD mapping must assign N1..N4 to F1/F2, got {out!r}")
+    return out
+
+
+def render_sld_svg(case_id: str, mapping: Optional[Mapping[str, str]] = None) -> str:
     """Render a deterministic 1280x800 IEC-inspired Single-Line Diagram SVG.
 
     Text, labels, title block, and legends are 100% identical between Case A and Case B;
     only the vertical branch start, junction dot, and crossing arch geometry differ.
     """
-    mapping = get_case_sld_mapping(case_id)
+    mapping = _validate_explicit_mapping(mapping) if mapping is not None else get_case_sld_mapping(case_id)
 
     lines = [
         f'<svg xmlns="http://www.w3.org/2000/svg" width="{SLD_WIDTH}" height="{SLD_HEIGHT}" '
@@ -274,15 +281,20 @@ def render_sld_png(
     case_id: str,
     output_path: Path,
     svg_output_path: Optional[Path] = None,
+    mapping: Optional[Mapping[str, str]] = None,
 ) -> RenderedSLDPath:
     """Render both the deterministic SVG and the 1280x800 24-bit RGB PNG for the given case."""
     output_path = Path(output_path)
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
-    mapping = get_case_sld_mapping(case_id)
-    canonical_id = "case_A" if case_id.strip() in ("case_A", "A") else "case_B"
+    if mapping is not None:
+        mapping = _validate_explicit_mapping(mapping)
+        canonical_id = case_id.strip()
+    else:
+        mapping = get_case_sld_mapping(case_id)
+        canonical_id = "case_A" if case_id.strip() in ("case_A", "A") else "case_B"
 
-    svg_text = render_sld_svg(case_id)
+    svg_text = render_sld_svg(case_id, mapping=mapping)
     svg_path = Path(svg_output_path) if svg_output_path is not None else output_path.with_suffix(".svg")
     svg_path.parent.mkdir(parents=True, exist_ok=True)
     svg_path.write_text(svg_text, encoding="utf-8")

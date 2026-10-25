@@ -299,6 +299,8 @@ def _score_run(
 
     graph0 = _extract_edges_map(scene0)
     graph1 = _extract_edges_map(scene1)
+    if private_truth.get("judge_challenge") and not private_truth.get("current_edges"):
+        raise ValueError("Judge challenge truth is missing current_edges; refusing to fall back to canonical A/B truth")
     target_truth_edges: Dict[str, str] = dict(
         private_truth.get("current_edges")
         or private_truth.get("target_edges")
@@ -316,7 +318,14 @@ def _score_run(
 
     decision = str(patch.get("decision", "repair"))
     if decision == "repair" and render1_dir.exists() and (render1_dir / "render_wiring.png").exists():
-        cmp_res = compare_wiring_renders(render0_dir, render1_dir)
+        changed_racks = sorted({str(op.get("rack_id")) for op in (patch.get("operations") or []) if op.get("rack_id")})
+        stable_racks = [rk for rk in ("N1", "N2", "N3", "N4") if rk not in changed_racks]
+        cmp_res = compare_wiring_renders(
+            render0_dir,
+            render1_dir,
+            changed_racks=tuple(changed_racks) or ("N2", "N3"),
+            stable_racks=tuple(stable_racks),
+        )
     else:
         cmp_res = {
             "cable_pixels_changed": False,
@@ -362,6 +371,10 @@ def _score_run(
         "physics_safe": physics_safe,
     }
     return merged
+
+
+# Judge-created challenges use this answer-neutral filename for the current drawing.
+NEUTRAL_CURRENT_SLD_NAME = "current_sld.png"
 
 
 def _ensure_case_assets(case_dir: Path) -> Dict[str, Any]:
@@ -535,7 +548,8 @@ def run_twin_repair(
     shutil.copy2(old_sld_path, pub_out_dir / "old_sld_A.png")
     shutil.copy2(old_thermal_path, pub_out_dir / "old_thermal_rear.png")
     shutil.copy2(current_sld_path, pub_out_dir / current_sld_path.name)
-    if current_sld_path.name != "current_sld_B.png":
+    neutral_sld = current_sld_path.name == NEUTRAL_CURRENT_SLD_NAME
+    if current_sld_path.name != "current_sld_B.png" and not neutral_sld:
         shutil.copy2(current_sld_path, pub_out_dir / "current_sld_B.png")
     _atomic_write_json(pub_out_dir / "public_state.json", public_state)
     if private_truth:
@@ -824,10 +838,9 @@ def run_twin_repair(
     # Span 6: critic_validation & PATCH_VALIDATED
     # ------------------------------------------------------------------
     t_c_val = time.monotonic()
+    sld_aliases = (current_sld_path.name,) if neutral_sld else (current_sld_path.name, "current_sld_B.png", "current_sld_A.png")
     critic_images_manifest = {
-        current_sld_path.name: {"width_px": 1280, "height_px": 800, "sha256": current_sld_sha},
-        "current_sld_B.png": {"width_px": 1280, "height_px": 800, "sha256": current_sld_sha},
-        "current_sld_A.png": {"width_px": 1280, "height_px": 800, "sha256": current_sld_sha},
+        **{name: {"width_px": 1280, "height_px": 800, "sha256": current_sld_sha} for name in sld_aliases},
         "render0_wiring.png": {
             "width_px": 1280,
             "height_px": 800,
