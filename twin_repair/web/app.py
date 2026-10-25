@@ -27,11 +27,14 @@ from typing import Any, Dict, Mapping, Optional
 from starlette.applications import Starlette
 from starlette.requests import Request
 from starlette.responses import FileResponse, HTMLResponse, JSONResponse, Response
+from starlette.middleware import Middleware
+from starlette.middleware.gzip import GZipMiddleware
 from starlette.routing import Route
 
 from blackbox.managed import resolve_auth_config
 from twin_repair.challenge import build_challenge_fixture
 from twin_repair.orchestrator import run_twin_repair
+from twin_repair.web.live_api import JudgeLiveService, build_live_routes
 
 
 WEB_DIR = Path(__file__).resolve().parent
@@ -139,7 +142,7 @@ class TwinRepairWebState:
 
         for root_dir in search_roots:
             for sub in sorted(root_dir.iterdir()):
-                if not sub.is_dir() or sub.name in ("fixtures", "preflight", "_fixtures"):
+                if not sub.is_dir() or sub.name in ("fixtures", "preflight", "_fixtures", "judge"):
                     continue
                 if sub.name.startswith("showcase_"):
                     continue
@@ -200,6 +203,7 @@ def create_app(
     *,
     max_public_live_runs: int = 2,
     cooldown_s: float = 0.0,
+    judge_service: Optional[JudgeLiveService] = None,
 ) -> Starlette:
     """Create the Starlette ASGI web application for the Twin-Repair Challenge."""
     state = TwinRepairWebState(
@@ -358,11 +362,15 @@ def create_app(
                     )
 
             if is_paid:
-                if state.active_paid_run_id is not None:
+                if state.active_paid_run_id is None and live_service.active_run_id is not None:
+                    state_busy_id: Optional[str] = live_service.active_run_id
+                else:
+                    state_busy_id = state.active_paid_run_id
+                if state_busy_id is not None:
                     return JSONResponse(
                         {
                             "error": "Another live run is currently in progress; explore a recorded run.",
-                            "active_run_id": state.active_paid_run_id,
+                            "active_run_id": state_busy_id,
                             "fallback_run_id": fallback_rid,
                         },
                         status_code=429,
@@ -526,8 +534,7 @@ def create_app(
         )
 
     routes = [
-        Route("/", index_endpoint, methods=["GET"]),
-        Route("/index.html", index_endpoint, methods=["GET"]),
+        Route("/replay", index_endpoint, methods=["GET"]),
         Route("/app.js", app_js_endpoint, methods=["GET"]),
         Route("/styles.css", styles_css_endpoint, methods=["GET"]),
         Route("/health", health_endpoint, methods=["GET"]),
@@ -537,9 +544,25 @@ def create_app(
         Route("/runs/{run_id}/assets/{asset_name:path}", get_run_asset_endpoint, methods=["GET"]),
         Route("/runs/{run_id}/{extra_path:path}", forbidden_run_subpath_endpoint, methods=["GET"]),
     ]
-    starlette_app = Starlette(routes=routes)
+    live_service = judge_service or JudgeLiveService(Path(runs_root))
+    live_service.external_busy_fn = lambda: state.active_paid_run_id
+    routes = build_live_routes(live_service, _is_valid_judge_code) + routes
+    starlette_app = Starlette(routes=routes, middleware=[Middleware(GZipMiddleware, minimum_size=1024)])
+    starlette_app.state.judge_live = live_service
     starlette_app.state.twin_repair = state
     return starlette_app
 
 
-app = create_app()
+class _LazyApp:
+    """Build the default app on first request so importing this module starts no worker thread."""
+
+    def __init__(self) -> None:
+        self._inner: Optional[Starlette] = None
+
+    async def __call__(self, scope: Any, receive: Any, send: Any) -> None:
+        if self._inner is None:
+            self._inner = create_app()
+        await self._inner(scope, receive, send)
+
+
+app = _LazyApp()

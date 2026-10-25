@@ -57,8 +57,8 @@ PROMPTS_DIR: Path = Path(__file__).resolve().parent / "prompts"
 def load_role_prompt_template(role: str) -> str:
     """Load `prompts/builder.txt` or `prompts/critic.txt` and verify zero private leaks."""
     norm = role.strip().lower()
-    if norm not in ("builder", "critic"):
-        raise ValueError(f"Unsupported role {role!r}; expected 'builder' or 'critic'")
+    if norm not in ("builder", "critic", "critic_neutral"):
+        raise ValueError(f"Unsupported role {role!r}; expected 'builder', 'critic', or 'critic_neutral'")
     prompt_path = PROMPTS_DIR / f"{norm}.txt"
     text = prompt_path.read_text(encoding="utf-8")
     _scan_for_private_leaks(text, f"{norm}_prompt_template")
@@ -196,6 +196,32 @@ class LiveManagedTwinRepairProvider:
         self.time_fn = time_fn
         self.sleep_fn = sleep_fn
         self._seen_environment_ids: set[str] = set()
+        # Optional observer for live dashboards; receives only role, IDs, status, and step types.
+        self.progress_fn: Optional[Callable[[Dict[str, Any]], None]] = None
+
+    def _report_progress(self, role: str, interaction_id: str, environment_id: str, status: str, t0: float, inter: Any) -> None:
+        if self.progress_fn is None:
+            return
+        try:
+            raw_steps = _extract_inter_field(inter, "steps")
+            step_types: List[str] = []
+            if isinstance(raw_steps, (list, tuple)):
+                for st in raw_steps:
+                    st_type = st.get("type") if isinstance(st, Mapping) else getattr(st, "type", None)
+                    step_types.append(str(st_type or type(st).__name__)[:40])
+            self.progress_fn(
+                {
+                    "role": role,
+                    "interaction_id": interaction_id,
+                    "environment_id": environment_id,
+                    "status": status,
+                    "elapsed_s": round(max(0.0, float(self.time_fn()) - t0), 2),
+                    "step_types": step_types[-20:],
+                    "step_count": len(step_types),
+                }
+            )
+        except Exception:
+            pass
 
     def _ensure_client(self) -> Any:
         if self.client is None:
@@ -276,6 +302,7 @@ class LiveManagedTwinRepairProvider:
         if status == "canceled":
             status = "cancelled"
 
+        self._report_progress(role, interaction_id, environment_id, status, t0, created)
         timed_out = False
         while status not in TERMINAL_STATUSES:
             if float(self.time_fn()) - t0 >= self.poll_timeout_s:
@@ -294,6 +321,7 @@ class LiveManagedTwinRepairProvider:
             status = str(_extract_inter_field(latest, "status", "in_progress")).lower()
             if status == "canceled":
                 status = "cancelled"
+            self._report_progress(role, interaction_id, environment_id, status, t0, latest)
 
         env_from_final = _extract_inter_field(latest, "environment_id")
         if env_from_final:
@@ -394,8 +422,9 @@ class LiveManagedTwinRepairProvider:
         basis_scene_sha256: str,
         render0_meta: Optional[Mapping[str, Any]] = None,
     ) -> Tuple[Optional[Dict[str, Any]], Optional[bytes], RoleProvenance]:
-        base_prompt = load_role_prompt_template("critic")
         sld_name = Path(current_sld_path).name
+        # Judge-created challenges use a neutral filename and a prompt without revision hints.
+        base_prompt = load_role_prompt_template("critic_neutral" if sld_name == "current_sld.png" else "critic")
         named_imgs: List[Tuple[str, Union[Path, str, bytes]]] = [
             (sld_name, current_sld_path),
             ("render0_wiring.png", render0_wiring_path),

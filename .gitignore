@@ -30,3 +30,5 @@ blackbox/static3d/renders/
 # OS files
 .DS_Store
 Thumbs.db
+
+runs/judge/

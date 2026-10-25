@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0b0e13">
+  <meta name="description" content="BlackboxDC Twin Repair: Argon Managed Agents compare a new as-built drawing with an old digital twin before an operator moves load off a hot rack.">
+  <title>BlackboxDC Twin Repair · Live judge demo</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 16 16%27%3E%3Crect width=%2716%27 height=%2716%27 rx=%273%27 fill=%27%231d8aff%27/%3E%3Cpath d=%27M16 0v16H0z%27 fill=%27%23ff8c1a%27/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="/static/live.css">
+  <script type="importmap">
+    {"imports": {"three": "/vendor/three/three.module.min.js", "three/addons/": "/vendor/three/addons/"}}
+  </script>
+  <link rel="modulepreload" href="/static/live.js">
+  <link rel="modulepreload" href="/vendor/three/three.module.min.js">
+  <link rel="modulepreload" href="/vendor/three/three.core.min.js">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="logo" aria-hidden="true"></span>
+      <span class="brand-name">BlackboxDC <strong>Twin Repair</strong></span>
+    </div>
+    <div class="topbar-right">
+      <span id="liveBadge" class="pill pill-muted" role="status">Checking Argon…</span>
+    </div>
+  </header>
+
+  <main class="layout">
+    <section class="stage" aria-label="Digital twin">
+      <div id="viewer" class="viewer">
+        <div id="viewerLoading" class="viewer-loading">Loading 3D twin…</div>
+        <figure id="fallback" class="fallback" hidden>
+          <img id="fallbackImg" alt="Fixed-pose wiring render of this run">
+          <figcaption id="fallbackCaption">3D is unavailable on this device. Showing the fixed-pose render from this run.</figcaption>
+        </figure>
+      </div>
+      <div class="stage-overlay stage-top">
+        <span id="sceneLabel" class="pill pill-dark">Old twin</span>
+        <div class="legend" aria-label="Feeder legend">
+          <span class="chip chip-f1" id="legendF1"><i></i>F1<s> · blue</s><b></b></span>
+          <span class="chip chip-f2" id="legendF2"><i></i>F2<s> · orange</s><b></b></span>
+        </div>
+      </div>
+      <div class="stage-overlay stage-bottom">
+        <span id="runTag" class="pill pill-dark mono" hidden></span>
+        <div class="stage-actions">
+          <div class="seg" role="group" aria-label="Twin version">
+            <button id="showOld" class="seg-btn is-on" aria-pressed="true">Before</button>
+            <button id="showNew" class="seg-btn" aria-pressed="false" disabled>After</button>
+          </div>
+          <button id="resetView" class="icon-btn" aria-label="Reset to evidence view" title="Reset to evidence view">⟲</button>
+        </div>
+      </div>
+    </section>
+
+    <aside class="panel">
+      <div class="panel-head">
+      <h1 class="title">A hot rack. An outdated wiring map. A dangerous workload move.</h1>
+      <p id="headline" class="headline" aria-live="polite">Loading the old twin…</p>
+      <p id="subline" class="subline"></p>
+
+      <nav class="tabs" role="tablist" aria-label="Views">
+        <button class="tab is-on" role="tab" aria-selected="true" aria-controls="tab-decision" id="t-decision">Decision</button>
+        <button class="tab" role="tab" aria-selected="false" aria-controls="tab-agents" id="t-agents">Agents live <span id="agentsDot" class="dot" hidden></span></button>
+        <button class="tab" role="tab" aria-selected="false" aria-controls="tab-evidence" id="t-evidence">Evidence</button>
+      </nav>
+      </div>
+
+      <section id="tab-decision" class="tabpanel" role="tabpanel" aria-labelledby="t-decision">
+        <article class="card step" id="step1">
+          <header class="step-head"><span class="step-n">1</span><h2>Change drawing</h2></header>
+          <div class="sld-row">
+            <button id="sldBtn" class="sld-thumb" aria-label="Open today's drawing full screen" disabled>
+              <img id="sldImg" alt="Today's as-built single-line drawing" hidden>
+              <span id="sldEmpty" class="sld-empty">No new drawing yet</span>
+            </button>
+            <div class="sld-meta">
+              <fieldset class="choice" id="drawingChoice">
+                <legend>New as-built revision</legend>
+                <label class="radio"><input type="radio" name="drawing" value="A"><span><b>A</b> · same wiring as the old map</span></label>
+                <label class="radio"><input type="radio" name="drawing" value="B" checked><span><b>B</b> · N2 and N3 rewired</span></label>
+              </fieldset>
+              <p id="sldInfo" class="fine mono"></p>
+            </div>
+          </div>
+          <button id="simulateBtn" class="btn btn-secondary">Simulate a new as-built drawing</button>
+        </article>
+
+        <article class="card step" id="step2">
+          <header class="step-head"><span class="step-n">2</span><h2>Run Argon</h2></header>
+          <fieldset class="choice choice-inline" id="modeChoice">
+            <legend>Run mode</legend>
+          </fieldset>
+          <details class="judge-code" id="judgeCodeBox" hidden>
+            <summary>Judge code</summary>
+            <input id="judgeCode" type="password" autocomplete="off" inputmode="text" placeholder="Optional judge code" aria-label="Judge code">
+          </details>
+          <button id="runBtn" class="btn btn-primary" disabled>Ask Argon to inspect and repair</button>
+          <p id="runMsg" class="fine" role="status"></p>
+          <details id="railBox" class="rail-box" open hidden>
+            <summary id="railSummary">Run stages</summary>
+            <ol id="stageRail" class="rail" aria-label="Run stages"></ol>
+          </details>
+        </article>
+
+        <article class="card step" id="step3">
+          <header class="step-head"><span class="step-n">3</span><h2>Inspect result</h2></header>
+          <div id="resultEmpty" class="fine">The result appears here once the verifier has checked Argon's patch.</div>
+          <div id="result" hidden>
+            <div class="status-row">
+              <span id="visualChip" class="pill"></span>
+              <span id="actionChip" class="pill"></span>
+              <span id="sourceChip" class="pill pill-muted"></span>
+            </div>
+            <div id="figures" class="figures"></div>
+            <div id="actionsBox" class="actions-box" hidden>
+              <h3>What if the operator moves 8 A off N4?</h3>
+              <div class="seg seg-wide" role="group" aria-label="Workload move" id="actionSeg">
+                <button data-target="" class="seg-btn">No action</button>
+                <button data-target="N2" class="seg-btn">Move 8 A to N2</button>
+                <button data-target="N3" class="seg-btn">Move 8 A to N3</button>
+              </div>
+              <div id="actionDetail" class="action-detail" aria-live="polite"></div>
+            </div>
+            <p class="review-banner" role="note"><b>Human review required.</b> Verify against site documentation before any physical change.</p>
+            <p id="provLine" class="fine mono"></p>
+          </div>
+        </article>
+
+        <p class="fine center"><a id="recordedLink" href="/?run=live1">Open the recorded full two-agent live run (live1)</a></p>
+      </section>
+
+      <section id="tab-agents" class="tabpanel" role="tabpanel" aria-labelledby="t-agents" hidden>
+        <p class="fine">Each role runs in its own Argon Managed Agent environment. The <b>Builder</b> reads the old drawing and thermal image and writes the twin scene. The <b>Critic</b> compares today's drawing with the rendered old twin and proposes a cable patch. Values below are polled from this run; nothing is simulated.</p>
+        <div class="agents">
+          <article class="card agent" id="agent-builder">
+            <header><h3>Builder agent</h3><span class="pill pill-muted" data-k="status">Waiting</span></header>
+            <dl>
+              <dt>Interaction</dt><dd class="mono" data-k="interaction">—</dd>
+              <dt>Environment</dt><dd class="mono" data-k="environment">—</dd>
+              <dt>Elapsed</dt><dd data-k="elapsed">—</dd>
+              <dt>Steps</dt><dd data-k="steps">—</dd>
+              <dt>Model</dt><dd class="mono" data-k="model">—</dd>
+            </dl>
+            <div class="steps" data-k="types"></div>
+          </article>
+          <article class="card agent" id="agent-critic">
+            <header><h3>Critic agent</h3><span class="pill pill-muted" data-k="status">Waiting</span></header>
+            <dl>
+              <dt>Interaction</dt><dd class="mono" data-k="interaction">—</dd>
+              <dt>Environment</dt><dd class="mono" data-k="environment">—</dd>
+              <dt>Elapsed</dt><dd data-k="elapsed">—</dd>
+              <dt>Steps</dt><dd data-k="steps">—</dd>
+              <dt>Model</dt><dd class="mono" data-k="model">—</dd>
+            </dl>
+            <div class="steps" data-k="types"></div>
+          </article>
+        </div>
+        <h3 class="section-h">Run log</h3>
+        <ol id="eventLog" class="log"></ol>
+      </section>
+
+      <section id="tab-evidence" class="tabpanel" role="tabpanel" aria-labelledby="t-evidence" hidden>
+        <div id="evidence"><p class="fine">Start or open a run to see its evidence.</p></div>
+      </section>
+    </aside>
+  </main>
+
+  <footer class="footer">Synthetic facility; digital-twin update only; no physical switching; engineer approval required.</footer>
+
+  <dialog id="zoom" class="zoom" aria-label="Drawing zoom">
+    <form method="dialog"><button class="icon-btn zoom-close" aria-label="Close">✕</button></form>
+    <div class="zoom-scroll"><img id="zoomImg" alt="Today's as-built drawing, zoomed"></div>
+    <p class="fine">Tap the drawing to zoom in or out.</p>
+  </dialog>
+
+  <noscript><p class="noscript">This demo needs JavaScript.</p></noscript>
+  <script type="module" src="/static/live.js"></script>
+</body>
+</html>

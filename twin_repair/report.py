@@ -64,6 +64,105 @@ def _strip_private_keys(obj: Any) -> Any:
     return obj
 
 
+VISUAL_REPAIR_STATUSES: tuple[str, ...] = ("REPAIRED", "NO_CHANGE", "ABSTAINED", "REJECTED")
+ACTION_STATUSES: tuple[str, ...] = ("SAFE_RECEIVER_FOUND", "MULTIPLE_SAFE", "NO_SAFE_ACTION", "INSUFFICIENT_EVIDENCE")
+
+
+def _role_summary(prov: Mapping[str, Any]) -> Dict[str, Any]:
+    prov = dict(prov or {})
+    return {
+        "source": prov.get("source"),
+        "returned_model": prov.get("returned_model"),
+        "argon_verified": bool(prov.get("argon_verified", False)),
+        "environment_id": prov.get("environment_id"),
+        "interaction_id": prov.get("interaction_id"),
+        "status": prov.get("status"),
+        "elapsed_s": prov.get("elapsed_s"),
+        "input_images": [
+            {"name": m.get("name"), "sha256": m.get("sha256")}
+            for m in (prov.get("image_manifest") or [])
+            if isinstance(m, Mapping)
+        ],
+    }
+
+
+def derive_outcome_fields(run_data: Mapping[str, Any]) -> Dict[str, Any]:
+    """Separate the visual repair verdict from the electrical action verdict.
+
+    An accurate repair with no safe transfer is a valid safety result, so the two are never folded
+    into a single PASS. Values are computed only from this run's validated artifacts.
+    """
+    raw_gates = dict(run_data.get("gates") or {})
+
+    def gate(key: str) -> bool:
+        return bool(raw_gates.get(key, run_data.get(key, False)))
+
+    terminal_state = str(run_data.get("terminal_state", "REJECTED"))
+    patch = dict(run_data.get("patch") or {})
+    decision = str(run_data.get("decision") or patch.get("decision") or "").lower()
+    score = dict(run_data.get("score") or {})
+    total = int(score.get("total_edges", 0) or 0)
+
+    if terminal_state == "ABSTAINED":
+        visual = "ABSTAINED"
+    elif decision == "no_change" and gate("patch_valid") and total > 0 and int(score.get("before_correct_edges", -1)) == total:
+        visual = "NO_CHANGE"
+    elif (
+        decision == "repair"
+        and gate("patch_valid")
+        and gate("render1_valid")
+        and gate("cable_pixels_changed")
+        and gate("graph_improved")
+        and bool(score.get("evidence_boxes_valid", False))
+    ):
+        visual = "REPAIRED"
+    else:
+        visual = "REJECTED"
+
+    action_comp = dict(run_data.get("action_comparison") or {})
+    repaired = action_comp.get("repaired_outcomes")
+    if visual in ("REPAIRED", "NO_CHANGE") and isinstance(repaired, list) and repaired:
+        safe_targets = sorted(
+            str(o.get("target_rack"))
+            for o in repaired
+            if isinstance(o, Mapping) and o.get("target_rack") and bool(o.get("safe"))
+        )
+        if not safe_targets:
+            action = "NO_SAFE_ACTION"
+        elif len(safe_targets) == 1:
+            action = "SAFE_RECEIVER_FOUND"
+        else:
+            action = "MULTIPLE_SAFE"
+        receiver = action_comp.get("repaired_recommended_receiver") if safe_targets else None
+    else:
+        action, safe_targets, receiver = "INSUFFICIENT_EVIDENCE", [], None
+
+    provider_mode = str(run_data.get("provider_mode", "mock"))
+    if provider_mode == "mock":
+        source = "mock_fixture"
+    elif provider_mode == "replay" or run_data.get("is_replay"):
+        source = "recorded_live_replay"
+    elif bool(run_data.get("prepared_builder")) or provider_mode == "prepared_builder":
+        source = "prepared_builder_live_critic"
+    else:
+        source = "full_live_two_agents"
+
+    return {
+        "visual_repair_status": visual,
+        "action_status": action,
+        "safe_receivers": safe_targets,
+        "recommended_receiver": receiver,
+        "tie_break_rule": (
+            "Lowest peak feeder load ratio, then rack ID" if action == "MULTIPLE_SAFE" else None
+        ),
+        "execution_source": source,
+        "role_provenance": {
+            "builder": _role_summary(dict(run_data.get("builder_provenance") or {})),
+            "critic": _role_summary(dict(run_data.get("critic_provenance") or {})),
+        },
+    }
+
+
 def build_public_result_card(run_data: Mapping[str, Any]) -> Dict[str, Any]:
     """Build the strictly redacted `result_public.json` dictionary for CLI and web UI."""
     raw_gates = dict(run_data.get("gates") or {})
@@ -92,37 +191,49 @@ def build_public_result_card(run_data: Mapping[str, Any]) -> Dict[str, Any]:
     graph_score_summary = f"{graph_score_before} -> {graph_score_after}"
 
     action_comp = dict(run_data.get("action_comparison") or {})
-    old_rec = str(action_comp.get("stale_recommended_receiver") or action_comp.get("old_receiver") or "N3")
-    repaired_rec = str(
-        action_comp.get("repaired_recommended_receiver")
-        or action_comp.get("recommended_receiver")
-        or ("N2" if decision in ("repair", "no_change") else "none")
-    )
+    outcome = derive_outcome_fields(run_data)
+    old_rec = action_comp.get("stale_recommended_receiver") or action_comp.get("old_receiver")
+    repaired_rec = action_comp.get("repaired_recommended_receiver") or action_comp.get("recommended_receiver")
 
-    # Extract per-candidate currents/temperatures under the post-repair (or current) graph
+    # Per-candidate values come only from this run's solver output; never substitute canonical numbers.
     post_candidates = action_comp.get("post_repair_candidates") or action_comp.get("candidates") or {}
     n3_info = post_candidates.get("N3") or post_candidates.get("MIGRATE_N4_TO_N3_8A") or {}
     n2_info = post_candidates.get("N2") or post_candidates.get("MIGRATE_N4_TO_N2_8A") or {}
+    old_info = dict(action_comp.get("stale_choice_evaluated_on_repaired_graph") or {})
+    rep_info = dict(action_comp.get("repaired_choice_evaluated_on_repaired_graph") or {})
 
-    n3_f1 = float(n3_info.get("f1_current_a", n3_info.get("F1_A", 48.0)))
-    n3_f1_lim = float(n3_info.get("f1_limit_a", 44.0))
-    n2_f1 = float(n2_info.get("f1_current_a", n2_info.get("F1_A", 40.0)))
-    n2_f1_lim = float(n2_info.get("f1_limit_a", 44.0))
-    n2_f2 = float(n2_info.get("f2_current_a", n2_info.get("F2_A", 28.0)))
-    n2_f2_lim = float(n2_info.get("f2_limit_a", 50.0))
-    n4_temp_180s = float(
-        n2_info.get("n4_temp_180s_c", n2_info.get("n4_final_temp_c", action_comp.get("n4_repaired_temp_180s_c", 52.53)))
-    )
+    def _num(info: Mapping[str, Any], *keys: str) -> Any:
+        for key in keys:
+            if info.get(key) is not None:
+                return round(float(info[key]), 2)
+        return None
 
-    if terminal_state == "PASS":
+    n3_f1 = _num(n3_info, "f1_current_a", "F1_A")
+    n3_f1_lim = _num(n3_info, "f1_limit_a")
+    n2_f1 = _num(n2_info, "f1_current_a", "F1_A")
+    n2_f1_lim = _num(n2_info, "f1_limit_a")
+    n2_f2 = _num(n2_info, "f2_current_a", "F2_A")
+    n2_f2_lim = _num(n2_info, "f2_limit_a")
+    n4_temp_180s = _num(rep_info, "n4_temp_180s_c", "n4_final_temp_c")
+    if n4_temp_180s is None:
+        n4_temp_180s = _num(n2_info, "n4_temp_180s_c", "n4_final_temp_c")
+
+    def _choice_text(rack: Any, info: Mapping[str, Any]) -> str:
+        if not rack or not info:
+            return "No verified recommendation issued"
+        f1, f1l = _num(info, "f1_current_a"), _num(info, "f1_limit_a")
+        f2, f2l = _num(info, "f2_current_a"), _num(info, "f2_limit_a")
+        if None in (f1, f1l, f2, f2l):
+            return "No verified recommendation issued"
+        status = "within limits" if info.get("safe") else "unsafe"
+        return f"{rack}: F1 = {f1:.0f}/{f1l:.0f} A, F2 = {f2:.0f}/{f2l:.0f} A ({status})"
+
+    if terminal_state == "PASS" and action_comp:
         result_caption = "Argon corrected the twin's wiring before the operator relied on its old recommendation."
-        old_choice_banner = (
-            f"Old choice {old_rec}: F1 = {n3_f1:.0f}/{n3_f1_lim:.0f} A (over limit)"
-        )
-        repaired_choice_banner = (
-            f"Repaired choice {repaired_rec}: F1 = {n2_f1:.0f}/{n2_f1_lim:.0f} A, "
-            f"F2 = {n2_f2:.0f}/{n2_f2_lim:.0f} A (N4 180s = {n4_temp_180s:.2f} °C)"
-        )
+        old_choice_banner = f"Old choice {_choice_text(old_rec, old_info)}"
+        repaired_choice_banner = f"Repaired choice {_choice_text(repaired_rec, rep_info)}"
+        if n4_temp_180s is not None:
+            repaired_choice_banner += f" (N4 180s = {n4_temp_180s:.2f} °C)"
     elif terminal_state == "CONTROL_NO_CHANGE":
         result_caption = "The drawing and twin already agree; no repair was made."
         old_choice_banner = "Already matches; no repair made"
@@ -154,9 +265,13 @@ def build_public_result_card(run_data: Mapping[str, Any]) -> Dict[str, Any]:
         "headlines": {
             "incident_headline": "The connector is hot. Is the wiring map still correct?",
             "incident_caption": (
-                "The old twin suggests moving an 8 A-equivalent workload to N3."
-                if str(run_data.get("revision_current", "B")) == "B"
-                else "Control case: current diagram matches baseline revision A."
+                "Control case: current diagram matches baseline revision A."
+                if str(run_data.get("revision_current", "")) == "A"
+                else (
+                    f"The old twin suggests moving an 8 A-equivalent workload to {old_rec}."
+                    if old_rec
+                    else "The old twin's recommendation has not been evaluated."
+                )
             ),
             "result_caption": result_caption,
             "old_choice_banner": old_choice_banner,
@@ -175,22 +290,19 @@ def build_public_result_card(run_data: Mapping[str, Any]) -> Dict[str, Any]:
         "action_summary": {
             "stale_recommended_receiver": old_rec,
             "repaired_recommended_receiver": repaired_rec,
-            "n3_f1_current_a": round(n3_f1, 2),
-            "n3_f1_limit_a": round(n3_f1_lim, 2),
-            "n2_f1_current_a": round(n2_f1, 2),
-            "n2_f1_limit_a": round(n2_f1_lim, 2),
-            "n2_f2_current_a": round(n2_f2, 2),
-            "n2_f2_limit_a": round(n2_f2_lim, 2),
-            "n4_repaired_temp_180s_c": round(n4_temp_180s, 2),
-            "old_choice_text": f"N3: F1 = {n3_f1:.1f}/{n3_f1_lim:.1f} A",
-            "repaired_choice_text": (
-                f"N2: F1 = {n2_f1:.1f}/{n2_f1_lim:.1f} A, F2 = {n2_f2:.1f}/{n2_f2_lim:.1f} A, "
-                f"N4(180s) = {n4_temp_180s:.2f}°C"
-            ),
+            "n3_f1_current_a": n3_f1,
+            "n3_f1_limit_a": n3_f1_lim,
+            "n2_f1_current_a": n2_f1,
+            "n2_f1_limit_a": n2_f1_lim,
+            "n2_f2_current_a": n2_f2,
+            "n2_f2_limit_a": n2_f2_lim,
+            "n4_repaired_temp_180s_c": n4_temp_180s,
+            "old_choice_text": _choice_text(old_rec, old_info),
+            "repaired_choice_text": _choice_text(repaired_rec, rep_info),
         },
         "visual_verification": {
             "cable_pixels_changed": gates["cable_pixels_changed"],
-            "changed_Pixels_n2_corridor": int(score_data.get("changed_pixels_n2", 0)),
+            "changed_pixels_n2_corridor": int(score_data.get("changed_pixels_n2", 0)),
             "changed_pixels_n3_corridor": int(score_data.get("changed_pixels_n3", 0)),
             "render0_wiring_sha256": str(run_data.get("render0_wiring_sha256", "")),
             "render1_wiring_sha256": str(run_data.get("render1_wiring_sha256", "")),
@@ -198,6 +310,7 @@ def build_public_result_card(run_data: Mapping[str, Any]) -> Dict[str, Any]:
             "hotspot_registration_px": float(score_data.get("hotspot_registration_px", 0.0)),
             "hotspot_iou": float(score_data.get("hotspot_iou", 1.0)),
         },
+        **outcome,
         "patch": patch_public,
         "roles": {
             "builder": builder_prov,
@@ -293,7 +406,7 @@ def render_results_twin_repair_md(run_data: Mapping[str, Any]) -> str:
             "## 5. Verification Gates, Graph Score & Electrothermal Consequence",
             f"- **Graph Edge Accuracy:** `{gs.get('summary')}` (`{gs.get('before')}` -> `{gs.get('after')}`)",
             f"- **Cable Pixels Changed in Projected N2/N3 Corridors:** `{vis.get('cable_pixels_changed')}` "
-            f"(N2 delta px: `{vis.get('changed_Pixels_n2_corridor')}`, N3 delta px: `{vis.get('changed_pixels_n3_corridor')}`)",
+            f"(N2 delta px: `{vis.get('changed_pixels_n2_corridor')}`, N3 delta px: `{vis.get('changed_pixels_n3_corridor')}`)",
             f"- **Hotspot Registration & Localization:** registration delta `{vis.get('hotspot_registration_px')} px`, IoU `{vis.get('hotspot_iou')}`",
             f"- **Stale Twin Hypothetical Choice:** `{act.get('old_choice_text')}` (exceeds 44.0 A continuous limit on F1 under as-built B)",
             f"- **Repaired Twin Verified Choice:** `{act.get('repaired_choice_text')}`",
