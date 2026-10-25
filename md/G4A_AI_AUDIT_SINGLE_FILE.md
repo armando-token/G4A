@@ -1,24 +1,12 @@
 # BlackboxDC (`G4A`) — Comprehensive AI Audit Dossier
 
-## Instructions for the Auditing AI
-You are auditing the **BlackboxDC (`G4A`)** repository, including:
-1. **Phases 00–07 (`blackbox/`, `historical/`)**: Electro-thermal RC physics kernel, counterfactual A/B SLD study, Google GenAI Managed Agents (`antigravity-preview-09-2026` / `gemini-4-argon`) transport, 4-turn `I1->Probe->I2->A1->A2` protocol, 13-gate sealed verifier, and historical regressions (`138 passed`).
-2. **BlackboxDC Twin Repair Addon (`twin_repair/` + `blackbox/static3d/`)**: Closed-loop 3D digital twin render -> visual critique -> patch -> 3D re-render -> electro-thermal verification (`11_TWIN_REPAIR_ADDON_IMPLEMENTATION_PLAN_EN.md`, `22 passed`, `160 passed` total).
-
-Please audit:
-- Contract & schema strictness (`scene_spec.v1`, `repair_patch.v1`)
-- True 3D graph-coupled cable rendering & pixel delta verification
-- Sandbox isolation between Builder and Critic Managed Agents (`edf75e56c487e37f0b63f4bc8e5b204c` vs `26e8d5e5c359ebb9ba783aa4e4391aff`)
-- Zero private truth leakage (`scan_for_truth_leakage`, HTTP 403 on `/private/truth.json`)
-- Electro-thermal decision reversal (`N3` unsafe 48/44A overload vs `N2` safe 40/44A & 28/50A at 52.53°C).
-
 ## File Manifest & SHA-256 Hashes
 | File Path | Bytes | SHA-256 |
 |---|---:|---|
 | `README.md` | 14858 | `fcd45c9ddcc0a39a3b64f156...` |
 | `RESULTS_TWIN_REPAIR.md` | 5493 | `68808aeed6d6f981f7cdf8e1...` |
-| `requirements.txt` | 125 | `7f2554d7f551793128ac900b...` |
-| `pyproject.toml` | 67 | `e8c4628ed8f1f109ed9455df...` |
+| `requirements.txt` | 159 | `9a695af4632a49c23c1b8e63...` |
+| `pyproject.toml` | 391 | `05d82354e220e2a3e5928d76...` |
 | `.env.example` | 185 | `180d40cbc5441a7e1ccddc86...` |
 | `.gitignore` | 411 | `6f4a4599f4be43af077ab0ba...` |
 | `blackbox/__init__.py` | 264 | `a76a014efffd0e0e82740b85...` |
@@ -56,9 +44,9 @@ Please audit:
 | `twin_repair/verifier.py` | 17284 | `36ea01eefa056d1a88e12e88...` |
 | `twin_repair/web/__init__.py` | 165 | `9813883c20bfed8f13a7dc8b...` |
 | `twin_repair/web/__main__.py` | 1194 | `c839b9140d52c97cb8f6b96d...` |
-| `twin_repair/web/app.js` | 10240 | `4b39453ebf80fc550461e944...` |
-| `twin_repair/web/app.py` | 30989 | `be1279e1d62fb0077232f6a5...` |
-| `twin_repair/web/index.html` | 8886 | `1b136e128a5110b55309013a...` |
+| `twin_repair/web/app.js` | 9708 | `cb08dd452f623a857f15862d...` |
+| `twin_repair/web/app.py` | 22537 | `d565e1d4bd76bf2e0331e785...` |
+| `twin_repair/web/index.html` | 8889 | `bc4107da71becb744e1772a6...` |
 | `twin_repair/web/styles.css` | 11104 | `817155cffb5af5651a0c7b7b...` |
 | `historical/__init__.py` | 3869 | `9fa65bfd4db0d2d659c4df14...` |
 | `historical/causal_fixture.py` | 12047 | `7c26e59dc38bf0d5e3cfd8f7...` |
@@ -83,9 +71,9 @@ Please audit:
 | `tests/test_twin_repair_contracts.py` | 13171 | `8765fc6172c0e7c96960e559...` |
 | `tests/test_twin_repair_orchestrator.py` | 7060 | `ed07f9cde87fe5664dc1804a...` |
 | `tests/test_twin_repair_physics.py` | 5486 | `c0a0af7d6ecd1e0cc25ae7df...` |
-| `tests/test_twin_repair_render.py` | 8269 | `115596863dac037705719062...` |
+| `tests/test_twin_repair_render.py` | 10146 | `571359cb05a446d1b7f2be93...` |
 | `tests/test_visual.py` | 7909 | `f1890d477f5aa43aa8cba6c4...` |
-| `deploy/Caddyfile` | 723 | `da2120ba6990f1a1b32f3e75...` |
+| `deploy/Caddyfile` | 725 | `f26cc7286cf5414354cd5ff4...` |
 | `deploy/blackbox-dashboard.service` | 873 | `cf708df5fa7d56cf0c31116e...` |
 | `md/11_TWIN_REPAIR_ADDON_IMPLEMENTATION_PLAN_EN.md` | 68747 | `372ca677c9549578a6c1ae4d...` |
 | `runs/preflight/reuse_map.md` | 3921 | `de3f65d4643845278d64e21b...` |
@@ -398,6 +386,76 @@ python -m twin_repair.web --host 127.0.0.1 --port 8000 --runs runs
 - **Pre-Event Reused Baseline:** `blackbox/domain.py` electrothermal solver and `blackbox/managed.py` Managed Agent transport.
 - **Run Provenance Label:** `provider_mode=live`, `source=live`, `prepared_builder=False`, `is_replay=False`.
 - **Safety Disclaimer:** Synthetic as-built drift demonstration only. This output is NOT a physical data-center electrical safety certification and never actuates real equipment. Human engineering review is required (`human_review_required=True`).
+
+```
+
+---
+## File: `requirements.txt`
+```txt
+google-genai>=1.0.0
+numpy>=1.26.0
+streamlit>=1.35.0
+Pillow>=10.0.0
+pandas>=2.1.0
+pydantic>=2.5.0
+httpx>=0.27.0
+starlette>=0.37.0
+uvicorn>=0.30.0
+pytest>=8.0.0
+
+```
+
+---
+## File: `pyproject.toml`
+```toml
+[project]
+name = "blackboxdc"
+version = "2.0.0"
+requires-python = ">=3.11"
+dependencies = [
+    "google-genai>=1.0.0",
+    "numpy>=1.26.0",
+    "streamlit>=1.35.0",
+    "Pillow>=10.0.0",
+    "pandas>=2.1.0",
+    "pydantic>=2.5.0",
+    "httpx>=0.27.0",
+    "starlette>=0.37.0",
+    "uvicorn>=0.30.0",
+    "pytest>=8.0.0",
+]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
+
+```
+
+---
+## File: `deploy/Caddyfile`
+```text
+# BlackboxDC Twin-Repair 3D Web Application — Caddy Reverse Proxy Configuration
+# Proxies HTTPS (or HTTP on :8080 for local/LAN verification) to twin_repair.web on 127.0.0.1:8000.
+# Replace `:8080` with your public domain (e.g. `data.controlnautas.com`) for automatic Let's Encrypt TLS.
+
+{$BLACKBOX_DOMAIN::8080} {
+    encode zstd gzip
+
+    header {
+        X-Content-Type-Options "nosniff"
+        X-Frame-Options "SAMEORIGIN"
+        Referrer-Policy "no-referrer"
+        -Server
+    }
+
+    reverse_proxy 127.0.0.1:8000 {
+        header_up Host {host}
+        header_up X-Real-IP {remote_host}
+        header_up X-Forwarded-For {remote_host}
+        header_up X-Forwarded-Proto {scheme}
+        flush_interval -1
+    }
+}
 
 ```
 
@@ -6214,25 +6272,25 @@ def render_results_twin_repair_md(run_data: Mapping[str, Any]) -> str:
 
 Implements §7.F2 of `11_TWIN_REPAIR_ADDON_IMPLEMENTATION_PLAN_EN.md`:
 - `GET /health` -> health status
-- `GET /cases` -> safe case catalog (`drift_A_to_B`, `control_A_to_A`) + quota status
-- `POST /runs` -> start or execute a bounded run (`mock`, `live`, `prepared_builder`)
+- `GET /cases` -> safe case catalog (`drift_A_to_B`, `control_A_to_A`), recorded runs, and quota status
+- `POST /runs` -> execute a genuine `run_twin_repair` run (`mock`, `live`, `prepared_builder`)
   with global 1-active-paid-run lock, public live quota (`max_public_live_runs=2`),
-  `BLACKBOX_JUDGE_CODE` override, and per-visitor cooldown
+  `BLACKBOX_JUDGE_CODE` override, and per-visitor cooldown. Never fabricates `PASS` or
+  `argon_verified=True`; if `mode="live"` is requested without valid credentials, returns a
+  clear error (`HTTP 503`, `passed=False`, `argon_verified=False`).
 - `GET /runs/{run_id}` -> run status, stage, elapsed seconds, and redacted `result_public.json`
-- `GET /runs/{run_id}/assets/{asset_name:path}` -> strict allowlist asset server that
-  rejects `private/truth.json`, `score.json`, `..`, and any non-allowlisted path with HTTP 403
+- `GET /runs/{run_id}/assets/{asset_name:path}` -> strict allowlist asset server that serves
+  authentic files from `runs/live1` (and other recorded/executed runs) and rejects
+  `private/truth.json`, `score.json`, `..`, and any non-allowlisted path with HTTP 403
 - `GET /`, `GET /index.html`, `GET /app.js`, `GET /styles.css` -> 4-state web application UI
 """
 
 from __future__ import annotations
 
-import hashlib
 import json
 import os
-import struct
 import threading
 import time
-import zlib
 from pathlib import Path
 from typing import Any, Dict, Mapping, Optional
 
@@ -6241,11 +6299,14 @@ from starlette.requests import Request
 from starlette.responses import FileResponse, HTMLResponse, JSONResponse, Response
 from starlette.routing import Route
 
-from twin_repair.report import build_public_result_card
+from blackbox.managed import resolve_auth_config
+from twin_repair.challenge import build_challenge_fixture
+from twin_repair.orchestrator import run_twin_repair
 
 
 WEB_DIR = Path(__file__).resolve().parent
 REPO_ROOT = WEB_DIR.parent.parent
+CANONICAL_RUNS_ROOT = (REPO_ROOT / "runs").resolve()
 
 ALLOWED_CASE_IDS: frozenset[str] = frozenset({"drift_A_to_B", "control_A_to_A"})
 ALLOWED_MODES: frozenset[str] = frozenset({"mock", "live", "prepared_builder"})
@@ -6284,299 +6345,18 @@ NO_STORE_HEADERS: Dict[str, str] = {
 }
 
 
-def _make_minimal_png(width: int, height: int, rgb: tuple[int, int, int]) -> bytes:
-    """Create a valid minimal RGB PNG byte buffer for fast fallback asset creation."""
-    r, g, b = rgb
-    row = b"\x00" + bytes([r, g, b]) * width
-    raw = row * height
-
-    def _chunk(chunk_type: bytes, data: bytes) -> bytes:
-        crc = zlib.crc32(chunk_type + data) & 0xFFFFFFFF
-        return struct.pack(">I", len(data)) + chunk_type + data + struct.pack(">I", crc)
-
-    ihdr = struct.pack(">IIBBBBB", width, height, 8, 2, 0, 0, 0)
-    idat = zlib.compress(raw, level=1)
-    return b"\x89PNG\r\n\x1a\n" + _chunk(b"IHDR", ihdr) + _chunk(b"IDAT", idat) + _chunk(b"IEND", b"")
-
-
-def _default_edges(revision: str) -> list[dict[str, Any]]:
-    if revision == "A":
-        return [
-            {"edge_id": "E_F1_N1", "feeder_id": "F1", "rack_id": "N1", "Load_A": 18.0, "cord_Color": "#1d8aff"},
-            {"edge_id": "E_F2_N2", "feeder_id": "F2", "rack_id": "N2", "Load_A": 20.0, "cord_Color": "#ff8c1a"},
-            {"edge_id": "E_F2_N3", "feeder_id": "F2", "rack_id": "N3", "Load_A": 22.0, "cord_Color": "#ff8c1a"},
-            {"edge_id": "E_F1_N4", "feeder_id": "F1", "rack_id": "N4", "Load_A": 18.0, "cord_Color": "#1d8aff"},
-        ]
-    return [
-        {"edge_id": "E_F1_N1", "feeder_id": "F1", "rack_id": "N1", "Load_A": 18.0, "cord_Color": "#1d8aff"},
-        {"edge_id": "E_F1_N2", "feeder_id": "F1", "rack_id": "N2", "Load_A": 20.0, "cord_Color": "#1d8aff"},
-        {"edge_id": "E_F2_N2", "feeder_id": "F2", "rack_id": "N2", "Load_A": 20.0, "cord_Color": "#ff8c1a"},
-        {"edge_id": "E_F1_N3", "feeder_id": "F1", "rack_id": "N3", "Load_A": 22.0, "cord_Color": "#1d8aff"},
-        {"edge_id": "E_F1_N4", "feeder_id": "F1", "rack_id": "N4", "Load_A": 18.0, "cord_Color": "#1d8aff"},
-    ]
-
-
-def _default_scene_spec(case_id: str, revision: str) -> dict[str, Any]:
-    return {
-        "schema_version": "scene_spec.v1",
-        "case_id": case_id,
-        "revision": revision,
-        "racks": [
-            {"rack_id": "N1", "label": "N1", "x_m": -2.7, "z_m": 0.0, "load_a": 18.0, "inlet_temp_c": 27.0},
-            {"rack_id": "N2", "label": "N2", "x_m": -0.9, "z_m": 0.0, "load_a": 20.0, "inlet_temp_c": 27.0},
-            {"rack_id": "N3", "label": "N3", "x_m": 0.9, "z_m": 0.0, "load_a": 22.0, "inlet_temp_c": 27.0},
-            {"rack_id": "N4", "label": "N4", "x_m": 2.7, "z_m": 0.0, "load_a": 18.0, "inlet_temp_c": 27.0},
-        ],
-        "feeders": [
-            {"feeder_id": "F1", "label": "F1 (44A)", "limit_a": 44.0, "color_hex": "#1d8aff", "tray_y_m": 2.38, "tray_z_m": 0.26},
-            {"feeder_id": "F2", "label": "F2 (50A)", "limit_a": 50.0, "color_hex": "#ff8c1a", "tray_y_m": 2.12, "tray_z_m": 0.54},
-        ],
-        "edges": _default_edges(revision),
-        "hotspot": {
-            "rack_id": "N4",
-            "connector_id": "CONN_N4_REAR",
-            "sensor_id": "SNS_K2",
-            "temp_t0_c": 61.96,
-            "trip_limit_c": 65.0,
-        },
-        "camera_poses": {
-            "rear_inspection": {"position": [1.85, 1.55, 4.15], "lookAt": [1.65, 1.05, 0.25], "fov_deg": 40.0},
-            "wiring_oblique": {"position": [0.0, 2.85, 5.65], "lookAt": [0.0, 1.55, 0.0], "fov_deg": 42.0},
-        },
-    }
-
-
-def _ensure_fallback_run_bundle(
-    run_dir: Path,
-    *,
-    run_id: str,
-    case_id: str,
-    mode: str,
-    prepared_builder: bool = False,
-) -> Dict[str, Any]:
-    """Ensure a complete, deterministic run artifact directory exists for `run_id`."""
-    run_dir.mkdir(parents=True, exist_ok=True)
-    (run_dir / "private").mkdir(parents=True, exist_ok=True)
-    (run_dir / "render0").mkdir(parents=True, exist_ok=True)
-    (run_dir / "render1").mkdir(parents=True, exist_ok=True)
-
-    is_drift = case_id == "drift_A_to_B"
-    rev_current = "B" if is_drift else "A"
-    decision = "repair" if is_drift else "no_change"
-    terminal_state = "PASS" if is_drift else "CONTROL_NO_CHANGE"
-
-    scene0 = _default_scene_spec(case_id, "A")
-    scene1 = _default_scene_spec(case_id, rev_current)
-
-    if is_drift:
-        patch_obj: Dict[str, Any] = {
-            "schema_version": "ScenePatch.v1",
-            "case_id": case_id,
-            "decision": "repair",
-            "discrepancies": [
-                {
-                    "rack_id": "N2",
-                    "stale_feeders": ["F2"],
-                    "current_feeders": ["F1", "F2"],
-                    "reason": "Current SLD revision B shows N2 dual-fed from F1 and F2 (redundant 50/50 split).",
-                },
-                {
-                    "rack_id": "N3",
-                    "stale_feeders": ["F2"],
-                    "current_feeders": ["F1"],
-                    "reason": "Current SLD revision B shows N3 re-homed from F2 to F1.",
-                },
-            ],
-            "operations": [
-                {
-                    "op": "set_rack_feeders",
-                    "rack_id": "N2",
-                    "feeders": ["F1", "F2"],
-                    "redundancy_split": {"F1": 0.5, "F2": 0.5},
-                },
-                {
-                    "op": "set_rack_feeders",
-                    "rack_id": "N3",
-                    "feeders": ["F1"],
-                    "redundancy_split": {"F1": 1.0},
-                },
-            ],
-            "recommended_receiver": "N2",
-            "rationale": "Moving 8 A from N4 to N3 would overload F1 (48.0/44.0 A); moving 8 A to dual-fed N2 keeps F1 at 40.0/44.0 A and F2 at 28.0/50.0 A.",
-        }
-    else:
-        patch_obj = {
-            "schema_version": "ScenePatch.v1",
-            "case_id": case_id,
-            "decision": "no_change",
-            "discrepancies": [],
-            "operations": [],
-            "recommended_receiver": "N2",
-            "rationale": "Current SLD matches baseline revision A; no scene graph patch required.",
-        }
-
-    # Write JSON artifacts
-    (run_dir / "scene0.json").write_text(json.dumps(scene0, indent=2), encoding="utf-8")
-    (run_dir / "patch.json").write_text(json.dumps(patch_obj, indent=2), encoding="utf-8")
-    (run_dir / "scene1.json").write_text(json.dumps(scene1, indent=2), encoding="utf-8")
-
-    # Write private truth (never allowlisted for web serving)
-    truth_obj = {
-        "schema_version": "TwinRepairPrivateTruth.v1",
-        "case_id": case_id,
-        "revision_old": "A",
-        "revision_current": rev_current,
-        "current_edges_truth": _default_edges(rev_current),
-        "expected_decision": decision,
-        "expected_receiver": "N2",
-    }
-    (run_dir / "private" / "truth.json").write_text(json.dumps(truth_obj, indent=2), encoding="utf-8")
-
-    # Ensure PNG/meta assets exist (prefer copying real 1280x800 renders from showcase/live1 if available)
-    donor_candidates = (
-        ("showcase_drift_A_to_B", "live1", "mock1")
-        if is_drift
-        else ("showcase_control_A_to_A", "control_mock1")
-    )
-    donor_dir: Optional[Path] = None
-    for cand_name in donor_candidates:
-        cand_path = run_dir.parent / cand_name
-        if cand_path != run_dir and (cand_path / "render0" / "render_wiring.png").is_file():
-            donor_dir = cand_path
-            break
-        repo_cand = REPO_ROOT / "runs" / cand_name
-        if repo_cand != run_dir and (repo_cand / "render0" / "render_wiring.png").is_file():
-            donor_dir = repo_cand
-            break
-
-    asset_colors: Dict[str, tuple[int, int, int]] = {
-        "old_sld_A.png": (24, 52, 92),
-        "current_sld_B.png": (36, 78, 122) if is_drift else (24, 52, 92),
-        "old_thermal_rear.png": (180, 48, 24),
-        "render0/render_wiring.png": (20, 44, 80),
-        "render0/render_rgb_rear.png": (32, 40, 56),
-        "render0/render_thermal_rear.png": (190, 54, 28),
-        "render1/render_wiring.png": (28, 92, 148) if is_drift else (20, 44, 80),
-        "render1/render_rgb_rear.png": (36, 48, 64) if is_drift else (32, 40, 56),
-        "render1/render_thermal_rear.png": (190, 54, 28),
-    }
-    for rel_path, rgb in asset_colors.items():
-        fp = run_dir / rel_path
-        if not fp.exists():
-            if donor_dir is not None:
-                donor_fp = donor_dir / rel_path
-                if not donor_fp.is_file() and (donor_dir / "public" / rel_path).is_file():
-                    donor_fp = donor_dir / "public" / rel_path
-                if donor_fp.is_file():
-                    fp.write_bytes(donor_fp.read_bytes())
-                    continue
-            fp.write_bytes(_make_minimal_png(64, 36, rgb))
-
-    for sub, rev in (("render0", "A"), ("render1", rev_current)):
-        meta_path = run_dir / sub / "render_meta.json"
-        if not meta_path.exists():
-            meta_path.write_text(
-                json.dumps(
-                    {
-                        "schema_version": "RenderMeta.v1",
-                        "case_id": case_id,
-                        "revision": rev,
-                        "hotspot_bbox_2d": [765, 290, 825, 350],
-                        "projected_cable_corridors": {
-                            "N1": [[210, 80, 390, 460]],
-                            "N2": [[430, 80, 610, 460]],
-                            "N3": [[650, 80, 830, 460]],
-                            "N4": [[870, 80, 1050, 460]],
-                        },
-                        "revision_hud_Mask_rects": [[0, 0, 360, 64]],
-                    },
-                    indent=2,
-                ),
-                encoding="utf-8",
-            )
-
-    r0_sha = hashlib.sha256((run_dir / "render0" / "render_wiring.png").read_bytes()).hexdigest()
-    r1_sha = hashlib.sha256((run_dir / "render1" / "render_wiring.png").read_bytes()).hexdigest()
-    sld_sha = hashlib.sha256((run_dir / "current_sld_B.png").read_bytes()).hexdigest()
-
-    gates = {
-        "builder_completed": True,
-        "critic_completed": True,
-        "argon_verified": True,
-        "distinct_environments": True,
-        "render0_valid": True,
-        "patch_valid": True,
-        "render1_valid": True,
-        "cable_pixels_changed": bool(is_drift),
-        "graph_improved": bool(is_drift),
-        "physics_safe": True,
-        "human_review_required": True,
-    }
-    score_obj = {
-        "before_correct_edges": 2 if is_drift else 4,
-        "after_correct_edges": 4,
-        "total_edges": 4,
-        "changed_pixels_n2": 8326 if is_drift else 0,
-        "changed_pixels_n3": 8502 if is_drift else 0,
-        "hotspot_registration_px": 0.61,
-        "hotspot_iou": 0.98,
-    }
-    (run_dir / "score.json").write_text(json.dumps(score_obj, indent=2), encoding="utf-8")
-
-    run_data: Dict[str, Any] = {
-        "run_id": run_id,
-        "case_id": case_id,
-        "provider_mode": mode,
-        "source": "fixture" if mode == "mock" else mode,
-        "prepared_builder": prepared_builder or (mode == "prepared_builder"),
-        "terminal_state": terminal_state,
-        "passed": True,
-        "workflow_passed": True,
-        "decision": decision,
-        "revision_old": "A",
-        "revision_current": rev_current,
-        "gates": gates,
-        "score": score_obj,
-        "patch": patch_obj,
-        "render0_wiring_sha256": r0_sha,
-        "render1_wiring_sha256": r1_sha,
-        "current_sld_sha256": sld_sha,
-        "builder_provenance": {
-            "role": "builder",
-            "environment_id": f"env_builder_{run_id}",
-            "agent_id": f"agent_builder_{run_id}",
-            "session_id": f"sess_builder_{run_id}",
-            "model": "gemini-3.1-pro-preview",
-            "Thinking_level": "HIGH",
-        },
-        "critic_provenance": {
-            "role": "critic",
-            "environment_id": f"env_critic_{run_id}",
-            "agent_id": f"agent_critic_{run_id}",
-            "session_id": f"sess_critic_{run_id}",
-            "model": "gemini-3.1-pro-preview",
-            "thinking_level": "LOW",
-        },
-        "timing_spans_s": {
-            "render0": 0.42,
-            "builder": 0.18,
-            "render1": 0.41,
-            "critic": 0.14,
-            "verifier": 0.08,
-        },
-        "total_elapsed_s": 1.23,
-        "token_usage": {
-            "builder": {"prompt_tokens": 1120, "completion_tokens": 340, "total_tokens": 1460},
-            "critic": {"prompt_tokens": 980, "completion_tokens": 210, "total_tokens": 1190},
-        },
-    }
-    public_card = build_public_result_card(run_data)
-    (run_dir / "result_public.json").write_text(json.dumps(public_card, indent=2), encoding="utf-8")
-    return public_card
+def _describe_recorded_label(card: Mapping[str, Any]) -> str:
+    mode = str(card.get("provider_mode") or "").lower()
+    argon_ok = bool(card.get("argon_verified", False))
+    if mode == "live" and argon_ok:
+        return "Recorded live Argon run"
+    if mode == "live":
+        return "Recorded live run (unverified)"
+    return "Recorded mock rehearsal run"
 
 
 class TwinRepairWebState:
-    """In-memory state for bounded run concurrency, live quota, and run registry."""
+    """In-memory state for bounded run concurrency, live quota, and recorded run registry."""
 
     def __init__(
         self,
@@ -6593,56 +6373,89 @@ class TwinRepairWebState:
         self.active_paid_run_id: Optional[str] = None
         self.last_visitor_run_ts: Dict[str, float] = {}
         self.runs: Dict[str, Dict[str, Any]] = {}
+        self.run_dirs: Dict[str, Path] = {}
         self.lock = threading.Lock()
-        self._bootstrap_showcase_runs()
+        self._load_existing_runs()
 
-    def _bootstrap_showcase_runs(self) -> None:
-        """Ensure showcase replay runs exist on disk so the UI works immediately."""
-        for showcase_id, case_id in (
-            ("showcase_drift_A_to_B", "drift_A_to_B"),
-            ("showcase_control_A_to_A", "control_A_to_A"),
-        ):
-            run_dir = self.runs_root / showcase_id
-            result_path = run_dir / "result_public.json"
-            if result_path.exists():
-                try:
-                    card = json.loads(result_path.read_text(encoding="utf-8"))
-                except Exception:
-                    card = _ensure_fallback_run_bundle(
-                        run_dir, run_id=showcase_id, case_id=case_id, mode="mock"
-                    )
-            else:
-                card = _ensure_fallback_run_bundle(
-                    run_dir, run_id=showcase_id, case_id=case_id, mode="mock"
-                )
-            self.runs[showcase_id] = {
-                "run_id": showcase_id,
-                "case_id": case_id,
-                "mode": str(card.get("provider_mode", "mock")),
-                "status": "COMPLETED",
-                "stage": "completed",
-                "elapsed_s": float(card.get("total_elapsed_s", 1.23)),
-                "result": card,
-            }
+    def _register_run_dir(self, run_key: str, run_dir: Path, *, is_recorded: bool = True) -> Optional[Dict[str, Any]]:
+        rp = run_dir / "result_public.json"
+        if not rp.is_file():
+            return None
+        try:
+            card = json.loads(rp.read_text(encoding="utf-8"))
+        except Exception:
+            return None
+        record = {
+            "run_id": run_key,
+            "source_run_id": str(card.get("run_id", run_key)),
+            "case_id": str(card.get("case_id", "drift_A_to_B")),
+            "mode": str(card.get("provider_mode", "mock")),
+            "status": "COMPLETED",
+            "stage": "completed",
+            "recorded": bool(is_recorded),
+            "provenance_badge": _describe_recorded_label(card) if is_recorded else str(card.get("provider_mode", "mock")),
+            "elapsed_s": float(card.get("total_elapsed_s", 1.0)),
+            "result": card,
+        }
+        self.runs[run_key] = record
+        self.run_dirs[run_key] = run_dir.resolve()
+        return record
 
-        for sub in sorted(self.runs_root.iterdir()):
-            if not sub.is_dir() or sub.name in self.runs or sub.name in ("fixtures", "preflight"):
+    def _load_existing_runs(self) -> None:
+        """Load authentic recorded runs from `runs_root` (and `REPO_ROOT / 'runs'` read-only fallback)."""
+        search_roots = [self.runs_root]
+        if CANONICAL_RUNS_ROOT != self.runs_root and CANONICAL_RUNS_ROOT.is_dir():
+            search_roots.append(CANONICAL_RUNS_ROOT)
+
+        for root_dir in search_roots:
+            for sub in sorted(root_dir.iterdir()):
+                if not sub.is_dir() or sub.name in ("fixtures", "preflight", "_fixtures"):
+                    continue
+                if sub.name.startswith("showcase_"):
+                    continue
+                if sub.name not in self.runs:
+                    self._register_run_dir(sub.name, sub, is_recorded=True)
+
+        # Bind canonical showcase aliases directly to the authentic recorded dossiers (`live1` and `control_mock1`)
+        if "live1" in self.run_dirs:
+            self._register_run_dir("showcase_drift_A_to_B", self.run_dirs["live1"], is_recorded=True)
+        elif "mock1" in self.run_dirs:
+            self._register_run_dir("showcase_drift_A_to_B", self.run_dirs["mock1"], is_recorded=True)
+
+        if "control_mock1" in self.run_dirs:
+            self._register_run_dir("showcase_control_A_to_A", self.run_dirs["control_mock1"], is_recorded=True)
+
+    def resolve_run_dir(self, run_id: str) -> Optional[Path]:
+        with self.lock:
+            mapped = self.run_dirs.get(run_id)
+        if mapped is not None and mapped.is_dir():
+            return mapped
+        for base in (self.runs_root, CANONICAL_RUNS_ROOT):
+            candidate = (base / run_id).resolve()
+            try:
+                candidate.relative_to(base)
+            except ValueError:
                 continue
-            rp = sub / "result_public.json"
-            if rp.is_file():
-                try:
-                    card = json.loads(rp.read_text(encoding="utf-8"))
-                    self.runs[sub.name] = {
-                        "run_id": sub.name,
-                        "case_id": str(card.get("case_id", "drift_A_to_B")),
-                        "mode": str(card.get("provider_mode", "mock")),
-                        "status": "COMPLETED",
-                        "stage": "completed",
-                        "elapsed_s": float(card.get("total_elapsed_s", 1.0)),
-                        "result": card,
-                    }
-                except Exception:
-                    pass
+            if candidate.is_dir() and (candidate / "result_public.json").is_file():
+                with self.lock:
+                    self._register_run_dir(run_id, candidate, is_recorded=True)
+                return candidate
+        return None
+
+    def ensure_case_fixture_dir(self, case_id: str) -> Path:
+        """Return an existing challenge fixture directory or build one deterministically."""
+        canonical_map = {
+            "drift_A_to_B": CANONICAL_RUNS_ROOT / "fixtures" / "drift1",
+            "control_A_to_A": CANONICAL_RUNS_ROOT / "fixtures" / "control1",
+        }
+        cand = canonical_map.get(case_id)
+        if cand is not None and (cand / "public_state.json").is_file():
+            return cand
+
+        local_fixture = self.runs_root / "_fixtures" / case_id
+        if not (local_fixture / "public_state.json").is_file():
+            build_challenge_fixture(local_fixture, seed=20261025, case_type=case_id)
+        return local_fixture
 
 
 def _is_valid_judge_code(provided_code: Optional[str]) -> bool:
@@ -6653,7 +6466,7 @@ def _is_valid_judge_code(provided_code: Optional[str]) -> bool:
 
 
 def create_app(
-    runs_root: Path | str = REPO_ROOT / "runs",
+    runs_root: Path | str = CANONICAL_RUNS_ROOT,
     *,
     max_public_live_runs: int = 2,
     cooldown_s: float = 0.0,
@@ -6692,6 +6505,7 @@ def create_app(
                 "status": "ok",
                 "service": "blackbox-twin-repair",
                 "schema_version": "twin_repair_web.v1",
+                "default_recorded_live_run": "live1" if "live1" in state.runs else None,
             },
             headers=NO_STORE_HEADERS,
         )
@@ -6703,8 +6517,12 @@ def create_app(
             showcase_list = [
                 {
                     "run_id": rid,
+                    "source_run_id": info.get("source_run_id", rid),
                     "case_id": info["case_id"],
                     "mode": info["mode"],
+                    "recorded": info.get("recorded", True),
+                    "provenance_badge": info.get("provenance_badge", ""),
+                    "argon_verified": bool(info["result"].get("argon_verified", False)),
                     "terminal_state": info["result"].get("terminal_state"),
                 }
                 for rid, info in state.runs.items()
@@ -6720,7 +6538,7 @@ def create_app(
                         "incident_caption": "The old twin suggests moving an 8 A-equivalent workload to N3.",
                         "revision_old": "A",
                         "revision_current": "B",
-                        "default_showcase_run_id": "showcase_drift_A_to_B",
+                        "default_showcase_run_id": "live1" if "live1" in state.runs else "showcase_drift_A_to_B",
                     },
                     {
                         "case_id": "control_A_to_A",
@@ -6730,7 +6548,7 @@ def create_app(
                         "incident_caption": "Control case: current diagram matches baseline revision A.",
                         "revision_old": "A",
                         "revision_current": "A",
-                        "default_showcase_run_id": "showcase_control_A_to_A",
+                        "default_showcase_run_id": "control_mock1" if "control_mock1" in state.runs else "showcase_control_A_to_A",
                     },
                 ],
                 "public_live_quota_max": state.max_public_live_runs,
@@ -6751,7 +6569,7 @@ def create_app(
 
         case_id = str(payload.get("case_id") or "drift_A_to_B")
         mode = str(payload.get("mode") or "mock")
-        prepared_builder = bool(payload.get("prepared_builder", mode == "prepared_builder"))
+        prepared_scene0 = payload.get("prepared_scene0")
         judge_code = payload.get("judge_code") or request.headers.get("X-Judge-Code")
 
         if case_id not in ALLOWED_CASE_IDS:
@@ -6767,10 +6585,34 @@ def create_app(
                 headers=NO_STORE_HEADERS,
             )
 
+        fallback_rid = "live1" if case_id == "drift_A_to_B" else "control_mock1"
         visitor_key = request.client.host if request.client else "local"
         now = time.monotonic()
         is_paid = mode in ("live", "prepared_builder")
         has_judge_override = _is_valid_judge_code(judge_code)
+
+        # For live/paid requests, verify credentials BEFORE consuming quota or claiming execution
+        if is_paid:
+            auth_cfg = resolve_auth_config()
+            if not auth_cfg.get("ready"):
+                return JSONResponse(
+                    {
+                        "error": (
+                            f"Live Argon execution unavailable: {auth_cfg.get('reason', 'missing credentials')}. "
+                            "No live model call was made; inspect the recorded run 'live1' instead."
+                        ),
+                        "case_id": case_id,
+                        "mode": mode,
+                        "status": "FAILED",
+                        "terminal_state": "PROVIDER_ERROR",
+                        "passed": False,
+                        "workflow_passed": False,
+                        "argon_verified": False,
+                        "fallback_run_id": fallback_rid,
+                    },
+                    status_code=503,
+                    headers=NO_STORE_HEADERS,
+                )
 
         with state.lock:
             if state.cooldown_s > 0 and not has_judge_override:
@@ -6779,11 +6621,7 @@ def create_app(
                     return JSONResponse(
                         {
                             "error": "Cooldown active; please wait before starting another run.",
-                            "fallback_run_id": (
-                                "showcase_drift_A_to_B"
-                                if case_id == "drift_A_to_B"
-                                else "showcase_control_A_to_A"
-                            ),
+                            "fallback_run_id": fallback_rid,
                         },
                         status_code=429,
                         headers=NO_STORE_HEADERS,
@@ -6795,11 +6633,7 @@ def create_app(
                         {
                             "error": "Another live run is currently in progress; explore a recorded run.",
                             "active_run_id": state.active_paid_run_id,
-                            "fallback_run_id": (
-                                "showcase_drift_A_to_B"
-                                if case_id == "drift_A_to_B"
-                                else "showcase_control_A_to_A"
-                            ),
+                            "fallback_run_id": fallback_rid,
                         },
                         status_code=429,
                         headers=NO_STORE_HEADERS,
@@ -6809,11 +6643,7 @@ def create_app(
                         {
                             "error": "Live capacity reached; explore a recorded run",
                             "public_live_quota_remaining": 0,
-                            "fallback_run_id": (
-                                "showcase_drift_A_to_B"
-                                if case_id == "drift_A_to_B"
-                                else "showcase_control_A_to_A"
-                            ),
+                            "fallback_run_id": fallback_rid,
                         },
                         status_code=429,
                         headers=NO_STORE_HEADERS,
@@ -6830,26 +6660,51 @@ def create_app(
         run_dir = state.runs_root / run_id
         t0 = time.monotonic()
         try:
-            card = _ensure_fallback_run_bundle(
-                run_dir,
-                run_id=run_id,
-                case_id=case_id,
-                mode=mode,
-                prepared_builder=prepared_builder,
+            case_dir = state.ensure_case_fixture_dir(case_id)
+            card = run_twin_repair(
+                case_dir,
+                provider_mode=mode,
+                out_dir=run_dir,
+                prepared_scene0_path=prepared_scene0,
             )
             elapsed = round(max(0.01, time.monotonic() - t0), 3)
             run_record = {
                 "run_id": run_id,
+                "source_run_id": str(card.get("run_id", run_id)),
                 "case_id": case_id,
                 "mode": mode,
-                "status": "COMPLETED",
+                "status": "COMPLETED" if card.get("passed") else "FAILED",
                 "stage": "completed",
+                "recorded": False,
+                "provenance_badge": (
+                    "Executed live Argon run"
+                    if (mode == "live" and card.get("argon_verified"))
+                    else f"Executed {mode} run"
+                ),
                 "elapsed_s": elapsed,
                 "result": card,
             }
             with state.lock:
                 state.runs[run_id] = run_record
-            return JSONResponse(run_record, status_code=200, headers=NO_STORE_HEADERS)
+                state.run_dirs[run_id] = run_dir.resolve()
+            http_status = 200 if card.get("terminal_state") in ("PASS", "CONTROL_NO_CHANGE") else 502
+            return JSONResponse(run_record, status_code=http_status, headers=NO_STORE_HEADERS)
+        except Exception as exc:
+            return JSONResponse(
+                {
+                    "error": f"Orchestrator execution failed: {exc.__class__.__name__}: {exc}",
+                    "case_id": case_id,
+                    "mode": mode,
+                    "status": "FAILED",
+                    "terminal_state": "PROVIDER_ERROR",
+                    "passed": False,
+                    "workflow_passed": False,
+                    "argon_verified": False,
+                    "fallback_run_id": fallback_rid,
+                },
+                status_code=502,
+                headers=NO_STORE_HEADERS,
+            )
         finally:
             if is_paid:
                 with state.lock:
@@ -6858,34 +6713,16 @@ def create_app(
 
     async def get_run_endpoint(request: Request) -> JSONResponse:
         run_id = str(request.path_params.get("run_id", ""))
+        state.resolve_run_dir(run_id)
         with state.lock:
             record = state.runs.get(run_id)
 
         if record is None:
-            # Check if run directory exists on disk in runs_root
-            disk_dir = (state.runs_root / run_id).resolve()
-            if (
-                disk_dir.parent == state.runs_root
-                and (disk_dir / "result_public.json").is_file()
-            ):
-                card = json.loads((disk_dir / "result_public.json").read_text(encoding="utf-8"))
-                record = {
-                    "run_id": run_id,
-                    "case_id": str(card.get("case_id", "drift_A_to_B")),
-                    "mode": str(card.get("provider_mode", "mock")),
-                    "status": "COMPLETED",
-                    "stage": "completed",
-                    "elapsed_s": float(card.get("total_elapsed_s", 1.0)),
-                    "result": card,
-                }
-                with state.lock:
-                    state.runs[run_id] = record
-            else:
-                return JSONResponse(
-                    {"error": f"Run not found: {run_id}"},
-                    status_code=404,
-                    headers=NO_STORE_HEADERS,
-                )
+            return JSONResponse(
+                {"error": f"Run not found: {run_id}"},
+                status_code=404,
+                headers=NO_STORE_HEADERS,
+            )
 
         return JSONResponse(record, headers=NO_STORE_HEADERS)
 
@@ -6906,29 +6743,38 @@ def create_app(
                 headers=NO_STORE_HEADERS,
             )
 
-        run_dir = (state.runs_root / run_id).resolve()
-        try:
-            run_dir.relative_to(state.runs_root)
-        except ValueError:
+        run_dir = state.resolve_run_dir(run_id)
+        if run_dir is None:
             return JSONResponse(
-                {"error": "Forbidden: invalid run path."},
-                status_code=403,
+                {"error": f"Run not found: {run_id}"},
+                status_code=404,
                 headers=NO_STORE_HEADERS,
             )
 
-        asset_path = (run_dir / raw_asset).resolve()
-        if not asset_path.is_file() and (run_dir / "public" / raw_asset).is_file():
-            asset_path = (run_dir / "public" / raw_asset).resolve()
-        try:
-            asset_path.relative_to(run_dir)
-        except ValueError:
-            return JSONResponse(
-                {"error": "Forbidden: path traversal blocked."},
-                status_code=403,
-                headers=NO_STORE_HEADERS,
-            )
+        candidates = [
+            (run_dir / raw_asset).resolve(),
+            (run_dir / "public" / raw_asset).resolve(),
+        ]
+        # For control_A_to_A runs (decision == "no_change"), render1 is identical to render0
+        if raw_asset.startswith("render1/"):
+            r0_equiv = "render0/" + raw_asset[len("render1/"):]
+            candidates.append((run_dir / r0_equiv).resolve())
 
-        if not asset_path.is_file():
+        asset_path: Optional[Path] = None
+        for cand in candidates:
+            try:
+                cand.relative_to(run_dir)
+            except ValueError:
+                return JSONResponse(
+                    {"error": "Forbidden: path traversal blocked."},
+                    status_code=403,
+                    headers=NO_STORE_HEADERS,
+                )
+            if cand.is_file():
+                asset_path = cand
+                break
+
+        if asset_path is None:
             return JSONResponse(
                 {"error": f"Asset not found: {raw_asset}"},
                 status_code=404,
@@ -6967,5 +6813,764 @@ def create_app(
 
 
 app = create_app()
+
+```
+
+---
+## File: `twin_repair/web/index.html`
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BlackboxDC — 3D Twin-Repair &amp; Verification</title>
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <div id="app-shell" class="app-shell">
+    <!-- Top Header Bar -->
+    <header class="top-bar">
+      <div class="brand-group">
+        <span class="brand-mark">BLACKBOX DC</span>
+        <span class="brand-divider">/</span>
+        <span class="brand-subtitle">Self-Healing 3D Digital Twin &amp; Physics Verifier</span>
+      </div>
+      <div class="state-pills" role="navigation" aria-label="Workflow state">
+        <button id="nav-state-1" class="state-pill active" type="button" data-state="incident">1. Incident</button>
+        <button id="nav-state-2" class="state-pill" type="button" data-state="running">2. Running</button>
+        <button id="nav-state-3" class="state-pill" type="button" data-state="result">3. Result</button>
+        <button id="nav-state-4" class="state-pill" type="button" data-state="evidence">4. Evidence</button>
+      </div>
+      <div class="header-badges">
+        <span id="synthetic-badge" class="badge badge-synthetic">Synthetic case</span>
+        <span id="mode-badge" class="badge badge-mode">Recorded live Argon run</span>
+      </div>
+    </header>
+
+    <!-- Main Stage Container (fits 1280x720 above the fold) -->
+    <main class="stage-container">
+      <!-- STATE 1: INCIDENT -->
+      <section id="view-incident" class="state-view active" aria-labelledby="incident-headline">
+        <div class="headline-row">
+          <h1 id="incident-headline" class="stage-headline">The connector is hot. Is the wiring map still correct?</h1>
+          <div class="case-controls secondary-control">
+            <button id="btn-switch-control-case" class="link-button" type="button">View no-change control case</button>
+          </div>
+        </div>
+
+        <div class="comparison-grid">
+          <article class="visual-card">
+            <div class="card-header">
+              <span class="card-title">Current as-built wiring diagram</span>
+              <span id="incident-sld-tag" class="card-tag">SLD</span>
+            </div>
+            <div class="image-frame">
+              <img id="img-incident-sld" alt="Current as-built single-line wiring diagram" src="" />
+            </div>
+          </article>
+
+          <article class="visual-card">
+            <div class="card-header">
+              <span class="card-title">Current 3D twin (built from older revision)</span>
+              <span id="incident-twin-tag" class="card-tag">3D Twin</span>
+            </div>
+            <div class="image-frame twin-frame">
+              <img id="img-incident-render0" alt="Initial 3D twin wiring render" src="" />
+              <div class="thermal-inset">
+                <img id="img-incident-thermal" alt="Rear thermal hotspot inspection" src="" />
+                <span id="thermal-inset-caption" class="thermal-caption">Rear IR Hotspot</span>
+              </div>
+            </div>
+          </article>
+        </div>
+
+        <div class="bottom-bar">
+          <p id="incident-caption" class="incident-caption">The old twin suggests moving an 8 A-equivalent workload to N3.</p>
+          <div class="cta-group">
+            <button id="btn-repair-twin" class="primary-cta" type="button">View verified run</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- STATE 2: RUNNING -->
+      <section id="view-running" class="state-view" aria-labelledby="running-headline" hidden>
+        <div class="headline-row">
+          <h2 id="running-headline" class="stage-headline">Verifying 3D Twin Wiring Against Current As-Built SLD</h2>
+          <span id="running-elapsed" class="elapsed-pill">Elapsed: --</span>
+        </div>
+
+        <ol class="status-rail" id="running-rail">
+          <li id="step-builder" class="rail-step active">
+            <span class="step-indicator">1</span>
+            <div class="step-body">
+              <div class="step-title">Builder agent compares the current diagram with the 3D twin</div>
+              <div id="step-builder-prov" class="step-prov">Waiting for builder environment...</div>
+            </div>
+          </li>
+          <li id="step-render1" class="rail-step">
+            <span class="step-indicator">2</span>
+            <div class="step-body">
+              <div class="step-title">Re-rendering the 3D scene from the proposed patch</div>
+              <div id="step-render1-prov" class="step-prov">Headless Three.js scene graph &amp; cable corridor projection</div>
+            </div>
+          </li>
+          <li id="step-critic" class="rail-step">
+            <span class="step-indicator">3</span>
+            <div class="step-body">
+              <div class="step-title">Critic agent checks the updated 3D render against the diagram</div>
+              <div id="step-critic-prov" class="step-prov">Isolated critic environment verification</div>
+            </div>
+          </li>
+          <li id="step-verifier" class="rail-step">
+            <span class="step-indicator">4</span>
+            <div class="step-body">
+              <div class="step-title">Argon verifies feeder currents and thermal limits</div>
+              <div id="step-verifier-prov" class="step-prov">Deterministic coupled electro-thermal counterfactual check</div>
+            </div>
+          </li>
+        </ol>
+      </section>
+
+      <!-- STATE 3: RESULT -->
+      <section id="view-result" class="state-view" aria-labelledby="result-caption" hidden>
+        <div class="headline-row">
+          <h2 id="result-caption" class="stage-headline">Argon corrected the twin's wiring before the operator relied on its old recommendation.</h2>
+          <div class="toggle-group">
+            <button id="btn-toggle-before" class="toggle-btn" type="button">Before Repair (render0)</button>
+            <button id="btn-toggle-after" class="toggle-btn active" type="button">After Repair (render1)</button>
+          </div>
+        </div>
+
+        <div class="comparison-grid">
+          <article class="visual-card">
+            <div class="card-header">
+              <span class="card-title">Current as-built wiring diagram</span>
+              <span id="result-graph-score" class="card-tag">Graph Score</span>
+            </div>
+            <div class="image-frame">
+              <img id="img-result-sld" alt="Current as-built single-line diagram" src="" />
+            </div>
+          </article>
+
+          <article class="visual-card">
+            <div class="card-header">
+              <span id="result-render-title" class="card-title">Updated 3D Twin Wiring Render</span>
+              <span id="result-terminal-badge" class="card-tag">Terminal State</span>
+            </div>
+            <div class="image-frame">
+              <img id="img-result-render" alt="3D twin wiring render" src="" />
+            </div>
+          </article>
+        </div>
+
+        <div class="result-strip">
+          <div id="banner-old-choice" class="choice-banner banner-danger">--</div>
+          <div id="banner-repaired-choice" class="choice-banner banner-safe">--</div>
+          <button id="btn-inspect-evidence" class="secondary-cta" type="button">Inspect Evidence</button>
+        </div>
+      </section>
+
+      <!-- STATE 4: EVIDENCE DRAWER -->
+      <section id="view-evidence" class="state-view" aria-labelledby="evidence-headline" hidden>
+        <div class="headline-row">
+          <h2 id="evidence-headline" class="stage-headline">Audit &amp; Provenance Evidence</h2>
+          <button id="btn-back-to-result" class="secondary-cta" type="button">Back to Result</button>
+        </div>
+
+        <div id="human-review-banner" class="approval-banner">
+          Human review required — verify against site documentation before any physical change.
+        </div>
+
+        <div class="evidence-grid">
+          <div class="evidence-panel">
+            <h3>Role Provenance &amp; Verification Gates</h3>
+            <dl class="kv-list">
+              <dt>Builder Environment / Session</dt>
+              <dd id="ev-builder-ids">--</dd>
+              <dt>Critic Environment / Session</dt>
+              <dd id="ev-critic-ids">--</dd>
+              <dt>Graph Alignment Score</dt>
+              <dd id="ev-graph-score">--</dd>
+              <dt>Visual Cable Corridor Delta</dt>
+              <dd id="ev-visual-delta">--</dd>
+              <dt>SHA-256 (render0 / render1)</dt>
+              <dd id="ev-sha256">--</dd>
+            </dl>
+          </div>
+
+          <div class="evidence-panel">
+            <h3>ScenePatch.v1 &amp; Argon Physics Summary</h3>
+            <pre id="ev-patch-json" class="code-box"></pre>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+  <script src="/app.js"></script>
+</body>
+</html>
+
+```
+
+---
+## File: `twin_repair/web/app.js`
+```js
+/* BlackboxDC 4-State Web Application Client (Phase F).
+ * Populates all metrics, feeder currents, temperatures, and status badges
+ * strictly via textContent from result_public.json (zero innerHTML).
+ */
+(function () {
+  "use strict";
+
+  const state = {
+    currentState: "incident",
+    activeCaseId: "drift_A_to_B",
+    activeRunId: "live1",
+    resultCard: null,
+    showingAfterRender: true,
+    presentMode: false,
+  };
+
+  function byId(id) {
+    return document.getElementById(id);
+  }
+
+  function setText(id, value) {
+    const el = byId(id);
+    if (el) {
+      el.textContent = String(value == null ? "" : value);
+    }
+  }
+
+  function setImgSrc(id, src) {
+    const el = byId(id);
+    if (el) {
+      el.setAttribute("src", src);
+    }
+  }
+
+  function switchState(targetState) {
+    state.currentState = targetState;
+    const views = {
+      incident: byId("view-incident"),
+      running: byId("view-running"),
+      result: byId("view-result"),
+      evidence: byId("view-evidence"),
+    };
+    Object.keys(views).forEach(function (k) {
+      const v = views[k];
+      if (!v) return;
+      if (k === targetState) {
+        v.classList.add("active");
+        v.removeAttribute("hidden");
+      } else {
+        v.classList.remove("active");
+        v.setAttribute("hidden", "hidden");
+      }
+    });
+
+    const navMap = {
+      incident: "nav-state-1",
+      running: "nav-state-2",
+      result: "nav-state-3",
+      evidence: "nav-state-4",
+    };
+    Object.keys(navMap).forEach(function (k) {
+      const btn = byId(navMap[k]);
+      if (!btn) return;
+      if (k === targetState) {
+        btn.classList.add("active");
+      } else {
+        btn.classList.remove("active");
+      }
+    });
+
+    if (typeof window !== "undefined" && typeof window.scrollTo === "function") {
+      try {
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      } catch (_e) {
+        window.scrollTo(0, 0);
+      }
+    }
+  }
+
+  function assetUrl(runId, relPath) {
+    return "/runs/" + encodeURIComponent(runId) + "/assets/" + relPath;
+  }
+
+  function applyResultCard(runRecord) {
+    if (!runRecord || !runRecord.result) return;
+    const card = runRecord.result;
+    state.activeRunId = runRecord.run_id || card.run_id || state.activeRunId;
+    state.activeCaseId = runRecord.case_id || card.case_id || state.activeCaseId;
+    state.resultCard = card;
+
+    const headlines = card.headlines || {};
+    const gs = card.graph_score || {};
+    const vis = card.visual_verification || {};
+    const roles = card.roles || {};
+    const builder = roles.builder || {};
+    const critic = roles.critic || {};
+
+    setText("synthetic-badge", headlines.badge || "Synthetic case");
+    const provBadge =
+      runRecord.provenance_badge ||
+      (card.provider_mode === "live" && card.argon_verified
+        ? "Recorded live Argon run"
+        : "Recorded " + (card.provider_mode || "mock") + " run");
+    setText("mode-badge", provBadge);
+
+    // State 1: Incident
+    setText("incident-headline", headlines.incident_headline || "The connector is hot. Is the wiring map still correct?");
+    setText("incident-caption", headlines.incident_caption || "");
+    setImgSrc("img-incident-sld", assetUrl(state.activeRunId, "current_sld_B.png"));
+    setImgSrc("img-incident-render0", assetUrl(state.activeRunId, "render0/render_wiring.png"));
+    setImgSrc("img-incident-thermal", assetUrl(state.activeRunId, "old_thermal_rear.png"));
+
+    const switchBtn = byId("btn-switch-control-case");
+    if (switchBtn) {
+      switchBtn.textContent =
+        state.activeCaseId === "drift_A_to_B"
+          ? "View no-change control case"
+          : "View revision-drift case";
+    }
+
+    // State 2: Running provenance
+    setText(
+      "running-elapsed",
+      "Elapsed: " + String(Number(card.total_elapsed_s || runRecord.elapsed_s || 0).toFixed(2)) + "s"
+    );
+    setText(
+      "step-builder-prov",
+      "env=" + (builder.environment_id || "n/a") + " | id=" + (builder.interaction_id || builder.session_id || "n/a")
+    );
+    setText(
+      "step-critic-prov",
+      "env=" + (critic.environment_id || "n/a") + " | id=" + (critic.interaction_id || critic.session_id || "n/a")
+    );
+
+    // State 3: Result
+    setText("result-caption", headlines.result_caption || "");
+    setText("result-graph-score", "Graph: " + (gs.summary || ""));
+    setText("result-terminal-badge", card.terminal_state || "");
+    setImgSrc("img-result-sld", assetUrl(state.activeRunId, "current_sld_B.png"));
+
+    updateBeforeAfterRender();
+
+    const oldBanner = byId("banner-old-choice");
+    const repBanner = byId("banner-repaired-choice");
+    setText("banner-old-choice", headlines.old_choice_banner || "");
+    setText("banner-repaired-choice", headlines.repaired_choice_banner || "");
+
+    if (oldBanner && repBanner) {
+      oldBanner.className = "choice-banner";
+      repBanner.className = "choice-banner";
+      if (card.terminal_state === "PASS") {
+        oldBanner.classList.add("banner-danger");
+        repBanner.classList.add("banner-safe");
+      } else if (card.terminal_state === "CONTROL_NO_CHANGE") {
+        oldBanner.classList.add("banner-neutral");
+        repBanner.classList.add("banner-neutral");
+      } else {
+        oldBanner.classList.add("banner-amber");
+        repBanner.classList.add("banner-amber");
+      }
+    }
+
+    // State 4: Evidence
+    setText("human-review-banner", headlines.approval_banner || "Human review required");
+    setText(
+      "ev-builder-ids",
+      (builder.environment_id || "--") + " / " + (builder.returned_model || builder.agent_id || "--") + " / " + (builder.interaction_id || builder.session_id || "--")
+    );
+    setText(
+      "ev-critic-ids",
+      (critic.environment_id || "--") + " / " + (critic.returned_model || critic.agent_id || "--") + " / " + (critic.interaction_id || critic.session_id || "--")
+    );
+    setText("ev-graph-score", gs.summary || "--");
+    setText(
+      "ev-visual-delta",
+      "cable_pixels_changed=" +
+        String(Boolean(vis.cable_pixels_changed)) +
+        " | N2=" +
+        String(vis.changed_pixels_n2_corridor || 0) +
+        " px | N3=" +
+        String(vis.changed_pixels_n3_corridor || 0) +
+        " px"
+    );
+    setText(
+      "ev-sha256",
+      String(vis.render0_wiring_sha256 || "").slice(0, 16) +
+        "... -> " +
+        String(vis.render1_wiring_sha256 || "").slice(0, 16) +
+        "..."
+    );
+    setText(
+      "ev-patch-json",
+      JSON.stringify(
+        {
+          patch: card.patch || {},
+          action_summary: card.action_summary || {},
+          gates: card.gates || {},
+        },
+        null,
+        2
+      )
+    );
+  }
+
+  function updateBeforeAfterRender() {
+    const rel = state.showingAfterRender ? "render1/render_wiring.png" : "render0/render_wiring.png";
+    setImgSrc("img-result-render", assetUrl(state.activeRunId, rel));
+    setText(
+      "result-render-title",
+      state.showingAfterRender
+        ? "Repaired 3D Twin Wiring Render (render1)"
+        : "Stale 3D Twin Wiring Render (render0)"
+    );
+    const btnBefore = byId("btn-toggle-before");
+    const btnAfter = byId("btn-toggle-after");
+    if (btnBefore && btnAfter) {
+      if (state.showingAfterRender) {
+        btnAfter.classList.add("active");
+        btnBefore.classList.remove("active");
+      } else {
+        btnBefore.classList.add("active");
+        btnAfter.classList.remove("active");
+      }
+    }
+  }
+
+  async function loadRun(runId) {
+    const resp = await fetch("/runs/" + encodeURIComponent(runId), { cache: "no-store" });
+    if (!resp.ok) return;
+    const data = await resp.json();
+    applyResultCard(data);
+  }
+
+  async function triggerRepairRun() {
+    state.showingAfterRender = true;
+    updateBeforeAfterRender();
+    switchState("result");
+  }
+
+  function initEvents() {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("present") === "1") {
+      state.presentMode = true;
+      document.body.classList.add("present-mode");
+    }
+
+    ["incident", "running", "result", "evidence"].forEach(function (st, idx) {
+      const btn = byId("nav-state-" + String(idx + 1));
+      if (btn) {
+        btn.addEventListener("click", function () {
+          switchState(st);
+        });
+      }
+    });
+
+    const repairBtn = byId("btn-repair-twin");
+    if (repairBtn) {
+      repairBtn.addEventListener("click", function () {
+        triggerRepairRun();
+      });
+    }
+
+    const switchCaseBtn = byId("btn-switch-control-case");
+    if (switchCaseBtn) {
+      switchCaseBtn.addEventListener("click", function () {
+        if (state.activeCaseId === "drift_A_to_B") {
+          state.activeCaseId = "control_A_to_A";
+          loadRun("control_mock1");
+        } else {
+          state.activeCaseId = "drift_A_to_B";
+          loadRun("live1");
+        }
+      });
+    }
+
+    const btnBefore = byId("btn-toggle-before");
+    const btnAfter = byId("btn-toggle-after");
+    if (btnBefore) {
+      btnBefore.addEventListener("click", function () {
+        state.showingAfterRender = false;
+        updateBeforeAfterRender();
+      });
+    }
+    if (btnAfter) {
+      btnAfter.addEventListener("click", function () {
+        state.showingAfterRender = true;
+        updateBeforeAfterRender();
+      });
+    }
+
+    const evBtn = byId("btn-inspect-evidence");
+    if (evBtn) {
+      evBtn.addEventListener("click", function () {
+        switchState("evidence");
+      });
+    }
+
+    const backBtn = byId("btn-back-to-result");
+    if (backBtn) {
+      backBtn.addEventListener("click", function () {
+        switchState("result");
+      });
+    }
+  }
+
+  document.addEventListener("DOMContentLoaded", function () {
+    initEvents();
+    loadRun("live1");
+  });
+})();
+
+```
+
+---
+## File: `tests/test_twin_repair_render.py`
+```py
+"""Tests for Phase B (Parameterized Three.js 3D Twin & Render Bridge) and Phase F (4-State Web App)."""
+
+from __future__ import annotations
+
+import json
+import subprocess
+from pathlib import Path
+
+import pytest
+from starlette.testclient import TestClient
+
+from twin_repair.contracts import build_canonical_scene_spec
+from twin_repair.render_bridge import compare_wiring_renders, main as render_bridge_main, render_scene_spec
+from twin_repair.report import REQUIRED_GATE_KEYS
+from twin_repair.web.app import create_app
+
+
+REPO_ROOT = Path(__file__).resolve().parent.parent
+STATIC3D_DIR = REPO_ROOT / "blackbox" / "static3d"
+
+
+def _make_spec(revision: str) -> dict:
+    spec = build_canonical_scene_spec(source_revision=revision)
+    return spec.to_dict() if hasattr(spec, "to_dict") else dict(spec)
+
+
+def test_legacy_capture_mjs_backward_compatibility(tmp_path: Path) -> None:
+    """Verify legacy no-spec `node capture.mjs <out_dir>` remains 100% compatible."""
+    out_dir = tmp_path / "legacy_out"
+    proc = subprocess.run(
+        ["node", str(STATIC3D_DIR / "capture.mjs"), str(out_dir)],
+        cwd=str(STATIC3D_DIR),
+        capture_output=True,
+        text=True,
+        check=True,
+        timeout=60,
+    )
+    assert (out_dir / "rear_aisle_rgb.png").is_file()
+    assert (out_dir / "rear_aisle_thermal.png").is_file()
+    assert (out_dir / "render_meta.json").is_file()
+    meta = json.loads((out_dir / "render_meta.json").read_text(encoding="utf-8"))
+    assert meta.get("status") == "ok"
+    assert "metadataByMode" in meta
+    assert "rgb" in meta["metadataByMode"]
+    assert "thermal" in meta["metadataByMode"]
+    assert proc.returncode == 0
+
+
+def test_parameterized_render_scene_spec_and_wiring_diff(tmp_path: Path) -> None:
+    """Verify Spec A vs Spec B 3D renders produce distinct N2/N3 cable pixels and <=3px hotspot registration."""
+    spec_a_path = tmp_path / "scene0.json"
+    spec_b_path = tmp_path / "scene1.json"
+    spec_a_path.write_text(json.dumps(_make_spec("A"), indent=2), encoding="utf-8")
+    spec_b_path.write_text(json.dumps(_make_spec("B"), indent=2), encoding="utf-8")
+
+    out_a = tmp_path / "render0"
+    out_b = tmp_path / "render1"
+
+    res_a = render_scene_spec(spec_a_path, out_a)
+    res_b = render_scene_spec(spec_b_path, out_b)
+
+    for res, out_dir in ((res_a, out_a), (res_b, out_b)):
+        assert (out_dir / "render_wiring.png").is_file()
+        assert (out_dir / "render_rgb_rear.png").is_file()
+        assert (out_dir / "render_thermal_rear.png").is_file()
+        assert (out_dir / "render_meta.json").is_file()
+        assert float(res["registration_error_px"]) <= 3.0
+
+    diff = compare_wiring_renders(
+        out_a / "render_wiring.png",
+        out_b / "render_wiring.png",
+        out_a / "render_meta.json",
+        out_b / "render_meta.json",
+    )
+    assert diff["sha256_differs"] is True
+    assert diff["changed_pixels_by_rack"]["N2"] > 100
+    assert diff["changed_pixels_by_rack"]["N3"] > 100
+    assert diff["changed_pixels_by_rack"]["N1"] <= 10
+    assert diff["changed_pixels_by_rack"]["N4"] <= 10
+    assert float(diff["hotspot_shift_px"]) <= 3.0
+    assert diff["cable_pixels_changed"] is True
+
+    # Also verify control A -> A comparison yields cable_pixels_changed == False
+    diff_control = compare_wiring_renders(
+        out_a / "render_wiring.png",
+        out_a / "render_wiring.png",
+        out_a / "render_meta.json",
+        out_a / "render_meta.json",
+    )
+    assert diff_control["sha256_differs"] is False
+    assert diff_control["cable_pixels_changed"] is False
+
+
+def test_render_bridge_cli_entrypoint(tmp_path: Path) -> None:
+    """Verify `python -m twin_repair.render_bridge --spec ... --out-dir ...` works via main()."""
+    spec_path = tmp_path / "cli_spec.json"
+    spec_path.write_text(json.dumps(_make_spec("A"), indent=2), encoding="utf-8")
+    out_dir = tmp_path / "cli_out"
+    rc = render_bridge_main(["--spec", str(spec_path), "--out-dir", str(out_dir)])
+    assert rc == 0
+    assert (out_dir / "render_wiring.png").is_file()
+
+
+def test_web_app_routes_and_security_gates(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Verify Phase F web endpoints, authentic live1 assets, no-credential live rejection, and HTTP 403 security."""
+    import hashlib
+
+    monkeypatch.setenv("BLACKBOX_JUDGE_CODE", "SECRET_JUDGE_2026")
+    app = create_app(runs_root=tmp_path / "runs", max_public_live_runs=2, cooldown_s=0.0)
+    client = TestClient(app)
+
+    # 1. Health & static UI
+    r_health = client.get("/health")
+    assert r_health.status_code == 200
+    assert r_health.json()["status"] == "ok"
+
+    r_index = client.get("/?present=1")
+    assert r_index.status_code == 200
+    assert "The connector is hot. Is the wiring map still correct?" in r_index.text
+    assert "View verified run" in r_index.text
+    assert "Recorded live Argon run" in r_index.text
+
+    assert client.get("/app.js").status_code == 200
+    assert client.get("/styles.css").status_code == 200
+
+    # 2. Authentic runs/live1 verification (exact SHA-256 against dossier)
+    r_live_rec = client.get("/runs/live1")
+    assert r_live_rec.status_code == 200
+    live_rec_json = r_live_rec.json()
+    assert live_rec_json["provenance_badge"] == "Recorded live Argon run"
+    assert live_rec_json["result"]["run_id"] == "twin-repair-a9a617846fdc"
+    assert live_rec_json["result"]["argon_verified"] is True
+    assert live_rec_json["result"]["passed"] is True
+
+    expected_shas = {
+        "current_sld_B.png": "186249a7cd93520e20d65e1234f7cd3a032eaf32b6bc3ffb570afffb4d4cba7c",
+        "render0/render_wiring.png": "878ea0b344dc8d728d250b3ffd08c815dc75c1361d7b8b0bba0588da19e97cf9",
+        "render1/render_wiring.png": "6e2544c677aa6314e574e8176befbe14a973ecf6ea9bc159aa28d1cad792673d",
+    }
+    for asset_rel, exp_sha in expected_shas.items():
+        r_asset = client.get(f"/runs/live1/assets/{asset_rel}")
+        assert r_asset.status_code == 200
+        assert hashlib.sha256(r_asset.content).hexdigest() == exp_sha
+
+    # 3. Cases endpoint
+    r_cases = client.get("/cases")
+    assert r_cases.status_code == 200
+    cases_data = r_cases.json()
+    case_ids = {c["case_id"] for c in cases_data["cases"]}
+    assert case_ids == {"drift_A_to_B", "control_A_to_A"}
+    assert cases_data["public_live_quota_remaining"] == 2
+
+    # 4. POST /runs for drift_A_to_B (mock) genuinely runs orchestrator with argon_verified=False
+    r_drift = client.post("/runs", json={"case_id": "drift_A_to_B", "mode": "mock"})
+    assert r_drift.status_code == 200
+    drift_payload = r_drift.json()
+    drift_run_id = drift_payload["run_id"]
+    drift_card = drift_payload["result"]
+    assert drift_card["terminal_state"] == "PASS"
+    assert drift_card["provider_mode"] == "mock"
+    assert drift_card["argon_verified"] is False
+    for gate_key in REQUIRED_GATE_KEYS:
+        assert gate_key in drift_card
+        assert isinstance(drift_card[gate_key], bool)
+    assert drift_card["cable_pixels_changed"] is True
+    assert drift_card["graph_improved"] is True
+    assert drift_card["human_review_required"] is True
+
+    # 5. POST /runs for control_A_to_A (mock)
+    r_ctrl = client.post("/runs", json={"case_id": "control_A_to_A", "mode": "mock"})
+    assert r_ctrl.status_code == 200
+    ctrl_card = r_ctrl.json()["result"]
+    assert ctrl_card["terminal_state"] == "CONTROL_NO_CHANGE"
+    assert ctrl_card["argon_verified"] is False
+    assert ctrl_card["cable_pixels_changed"] is False
+
+    # 6. Public asset allowlist vs HTTP 403 Forbidden on private/truth.json and traversal
+    for allowed_asset in (
+        "current_sld_B.png",
+        "old_sld_A.png",
+        "old_thermal_rear.png",
+        "render0/render_wiring.png",
+        "render1/render_wiring.png",
+        "result_public.json",
+        "patch.json",
+    ):
+        resp_ok = client.get(f"/runs/{drift_run_id}/assets/{allowed_asset}")
+        assert resp_ok.status_code == 200, f"Expected 200 for {allowed_asset}"
+
+    for forbidden_asset in (
+        "private/truth.json",
+        "truth.json",
+        "score.json",
+        "../truth.json",
+        "render0/../../private/truth.json",
+    ):
+        resp_bad = client.get(f"/runs/{drift_run_id}/assets/{forbidden_asset}")
+        assert resp_bad.status_code == 403, f"Expected 403 for {forbidden_asset}, got {resp_bad.status_code}"
+
+    # 7. Without credentials, POST /runs with mode="live" MUST fail closed (never fabricate PASS or argon_verified)
+    import sys
+
+    web_app_mod = sys.modules["twin_repair.web.app"]
+    monkeypatch.setattr(
+        web_app_mod,
+        "resolve_auth_config",
+        lambda: {"mode": "mock", "ready": False, "reason": "No GEMINI_API_KEY configured"},
+    )
+    r_no_creds = client.post("/runs", json={"case_id": "drift_A_to_B", "mode": "live"})
+    assert r_no_creds.status_code == 503
+    no_creds_data = r_no_creds.json()
+    assert no_creds_data["passed"] is False
+    assert no_creds_data["argon_verified"] is False
+    assert no_creds_data["terminal_state"] == "PROVIDER_ERROR"
+
+    # 8. With credentials present, public live quota (2 runs allowed without judge code, 3rd returns HTTP 429, judge code overrides)
+    monkeypatch.setattr(
+        web_app_mod,
+        "resolve_auth_config",
+        lambda: {"mode": "ai_studio", "ready": True, "api_key_present": True},
+    )
+    monkeypatch.setattr(
+        web_app_mod,
+        "run_twin_repair",
+        lambda case_dir, **kw: dict(live_rec_json["result"], run_id=kw.get("run_id", "stub")),
+    )
+    r_live1 = client.post("/runs", json={"case_id": "drift_A_to_B", "mode": "live"})
+    assert r_live1.status_code == 200
+    r_live2 = client.post("/runs", json={"case_id": "drift_A_to_B", "mode": "live"})
+    assert r_live2.status_code == 200
+    r_live3 = client.post("/runs", json={"case_id": "drift_A_to_B", "mode": "live"})
+    assert r_live3.status_code == 429
+    assert "Live capacity reached; explore a recorded run" in r_live3.json()["error"]
+
+    r_judge = client.post(
+        "/runs",
+        json={"case_id": "drift_A_to_B", "mode": "live"},
+        headers={"X-Judge-Code": "SECRET_JUDGE_2026"},
+    )
+    assert r_judge.status_code == 200
 
 ```
