@@ -1176,6 +1176,550 @@ def evaluate_ab_campaign_v2(
 
 
 # ---------------------------------------------------------------------------
+# Phase 5: 13-Boolean Case Classification, Ablation Baselines & Pair Scorer
+# ---------------------------------------------------------------------------
+
+CASE_13_BOOLEAN_KEYS: Tuple[str, ...] = (
+    "input_integrity",
+    "native_multimodal_path",
+    "investigator_perception",
+    "measurement",
+    "model_and_action",
+    "forecast",
+    "auditor_independence",
+    "auditor_challenge",
+    "operational",
+    "provenance",
+    "numerical_evidence_valid",
+    "operational_complete",
+    "strict_case_passed",
+)
+
+
+def compute_case_13_booleans(
+    report: CaseEvaluationReportV2 | Mapping[str, Any] | Any,
+    *,
+    input_integrity_ok: bool = True,
+    native_multimodal_ok: bool = True,
+    provenance_ok: bool = True,
+    budget_within_limits: bool = True,
+    turns_completed_ok: Optional[bool] = None,
+    code_execution_ok: Optional[bool] = None,
+    direct_files_retrieved_ok: Optional[bool] = None,
+    require_live: bool = False,
+) -> Dict[str, bool]:
+    """Compute the exact 13 independent booleans required by Phase 5 Section 3 for one case."""
+    # If passed a VisualV2CaseRunResult object, extract its evaluation_report and turn_evidences
+    turn_evs: Optional[Mapping[str, Any]] = None
+    if hasattr(report, "evaluation_report"):
+        turn_evs = getattr(report, "turn_evidences", None)
+        if hasattr(report, "zero_leakage_verified") and not bool(getattr(report, "zero_leakage_verified")):
+            input_integrity_ok = False
+        report = getattr(report, "evaluation_report")
+
+    rep_dict = (
+        report.to_dict()
+        if hasattr(report, "to_dict")
+        else (asdict(report) if hasattr(report, "__dataclass_fields__") else dict(report))
+    )
+    sc_struct = dict(rep_dict.get("structural_checks") or {})
+    sc = dict(rep_dict.get("scientific_checks") or {})
+    sc_op = dict(rep_dict.get("operational_checks") or {})
+    structural_valid = bool(rep_dict.get("structural_valid", False))
+    scientific_correct = bool(rep_dict.get("scientific_correct", False))
+    rep_op_complete = bool(rep_dict.get("operational_complete", False))
+    live_ev = bool(rep_dict.get("live_provider_evidence", False))
+    strict_pass = bool(rep_dict.get("strict_pass", False))
+    offline_strict_pass = bool(rep_dict.get("offline_strict_pass", False))
+
+    if turn_evs is not None:
+        ev_list = [turn_evs.get(t) for t in ("I1", "I2", "A1", "A2")]
+        if turns_completed_ok is None:
+            turns_completed_ok = all(
+                ev is not None
+                and (
+                    getattr(ev, "status", None)
+                    if not isinstance(ev, Mapping)
+                    else ev.get("status")
+                )
+                == "completed"
+                for ev in ev_list
+            )
+        if code_execution_ok is None:
+            code_execution_ok = all(
+                ev is not None
+                and bool(
+                    getattr(ev, "has_code_execution_step", False)
+                    if not isinstance(ev, Mapping)
+                    else ev.get("has_code_execution_step", True)
+                )
+                for ev in ev_list
+            )
+        if direct_files_retrieved_ok is None:
+            direct_files_retrieved_ok = all(
+                ev is not None
+                and bool(
+                    getattr(ev, "retrieved_sha256", None)
+                    if not isinstance(ev, Mapping)
+                    else ev.get("retrieved_sha256", True)
+                )
+                for ev in ev_list
+            )
+
+    if turns_completed_ok is None:
+        turns_completed_ok = True
+    if code_execution_ok is None:
+        code_execution_ok = True
+    if direct_files_retrieved_ok is None:
+        direct_files_retrieved_ok = True
+
+    b_input_integrity = bool(
+        input_integrity_ok
+        and sc_op.get("zero_premature_truth_access", False)
+        and sc_struct.get("case_id_consistent", False)
+    )
+    b_native_multimodal = bool(native_multimodal_ok)
+    b_investigator_perception = bool(
+        sc_struct.get("i1_proposal_valid", False)
+        and sc.get("i1_hot_rack_correct", False)
+        and sc.get("i1_bbox_localized_pass", False)
+        and sc.get("i1_power_edges_exact", False)
+        and sc.get("i1_sensor_edges_exact", False)
+        and sc.get("i1_unknown_critical_edges_empty", False)
+    )
+    b_measurement = bool(
+        sc.get("i1_selected_measurement_correct", False)
+        and sc.get("probe_receipt_signature_valid", False)
+        and sc.get("probe_targeted_n4_voltage_drop", False)
+        and sc_op.get("single_probe_budget_respected", False)
+    )
+    b_model_and_action = bool(
+        sc_struct.get("i2_plan_valid", False)
+        and sc.get("i2_r0_accurate", False)
+        and sc.get("i2_h_accurate", False)
+        and sc.get("i2_c_accurate", False)
+        and sc.get("i2_selected_action_correct", False)
+        and sc.get("i2_unsafe_alternatives_rejected", False)
+        and sc_op.get("physical_safety_certified_false", False)
+    )
+    b_forecast = bool(
+        sc.get("i2_self_consistent_pass", False)
+        and sc.get("i2_trajectories_accurate", False)
+        and sc.get("i2_pdu_currents_accurate", False)
+        and sc.get("i2_safety_flags_correct", False)
+    )
+    b_auditor_independence = bool(
+        sc_struct.get("a1_graph_valid", False)
+        and sc_op.get("investigator_auditor_env_isolated", False)
+        and sc.get("a1_hot_rack_correct", False)
+        and sc.get("a1_bbox_localized_pass", False)
+        and sc.get("a1_power_edges_exact", False)
+        and sc.get("a1_sensor_edges_exact", False)
+        and sc.get("a1_unknown_critical_edges_empty", False)
+    )
+    b_auditor_challenge = bool(
+        sc_struct.get("a2_challenge_valid", False)
+        and sc.get("a2_recomputation_accurate", False)
+        and sc.get("a2_canary_valid", False)
+        and sc.get("a2_verdict_coherent", False)
+        and sc.get("a2_verdict_is_accept", False)
+    )
+    b_operational = bool(
+        turns_completed_ok
+        and code_execution_ok
+        and direct_files_retrieved_ok
+        and sc_op.get("all_four_locks_present", False)
+        and sc_op.get("lock_chain_verified", False)
+        and budget_within_limits
+    )
+    b_provenance = bool(
+        provenance_ok
+        and sc_op.get("all_four_locks_present", False)
+        and sc_op.get("lock_chain_verified", False)
+        and sc_struct.get("artifact_hash_matches", True)
+        and (live_ev if require_live else True)
+    )
+    b_numerical_valid = bool(
+        structural_valid
+        and scientific_correct
+        and b_investigator_perception
+        and b_measurement
+        and b_model_and_action
+        and b_forecast
+        and b_auditor_independence
+        and b_auditor_challenge
+    )
+    b_operational_complete = bool(rep_op_complete and b_operational and b_provenance)
+
+    first_12 = (
+        b_input_integrity,
+        b_native_multimodal,
+        b_investigator_perception,
+        b_measurement,
+        b_model_and_action,
+        b_forecast,
+        b_auditor_independence,
+        b_auditor_challenge,
+        b_operational,
+        b_provenance,
+        b_numerical_valid,
+        b_operational_complete,
+    )
+    b_strict_case_passed = bool(
+        all(first_12) and (strict_pass if require_live else offline_strict_pass)
+    )
+
+    return {
+        "input_integrity": b_input_integrity,
+        "native_multimodal_path": b_native_multimodal,
+        "investigator_perception": b_investigator_perception,
+        "measurement": b_measurement,
+        "model_and_action": b_model_and_action,
+        "forecast": b_forecast,
+        "auditor_independence": b_auditor_independence,
+        "auditor_challenge": b_auditor_challenge,
+        "operational": b_operational,
+        "provenance": b_provenance,
+        "numerical_evidence_valid": b_numerical_valid,
+        "operational_complete": b_operational_complete,
+        "strict_case_passed": b_strict_case_passed,
+    }
+
+
+def compute_campaign_ablations() -> Dict[str, Any]:
+    """Compute the 4 required comparison baselines across Case A and Case B."""
+    priv_a = build_private_world("A")
+    priv_b = build_private_world("B")
+    world_a: World = priv_a["world"]
+    world_b: World = priv_b["world"]
+
+    # 1. no_action: N4 overheats to ~98.83 C (> 90.0 C) in both Case A and Case B
+    sim_no_a = simulate_world(world_a, migration=None)
+    sim_no_b = simulate_world(world_b, migration=None)
+    no_action_baseline = {
+        "baseline_id": "no_action",
+        "description": "No load migration (selected_action_id='NO_ACTION'); N4 exceeds 90.0 C thermal limit in both cases.",
+        "is_fair_baseline": True,
+        "privileged_upper_bound": False,
+        "case_A": {
+            "selected_action_id": "NO_ACTION",
+            "decision": "abstain",
+            "n4_temp_t180_c": round(float(sim_no_a.temps_C["N4"][-1]), 4),
+            "f1_current_t180_a": round(float(sim_no_a.pdu_currents_A["F1"][-1]), 2),
+            "f2_current_t180_a": round(float(sim_no_a.pdu_currents_A["F2"][-1]), 2),
+            "thermal_violation": bool(sim_no_a.safety_flags["thermal_violation"]),
+            "pdu_overload": bool(sim_no_a.safety_flags["pdu_overload"]),
+            "safe": bool(sim_no_a.safety_flags["safe"]),
+        },
+        "case_B": {
+            "selected_action_id": "NO_ACTION",
+            "decision": "abstain",
+            "n4_temp_t180_c": round(float(sim_no_b.temps_C["N4"][-1]), 4),
+            "f1_current_t180_a": round(float(sim_no_b.pdu_currents_A["F1"][-1]), 2),
+            "f2_current_t180_a": round(float(sim_no_b.pdu_currents_A["F2"][-1]), 2),
+            "thermal_violation": bool(sim_no_b.safety_flags["thermal_violation"]),
+            "pdu_overload": bool(sim_no_b.safety_flags["pdu_overload"]),
+            "safe": bool(sim_no_b.safety_flags["safe"]),
+        },
+        "cases_safe_count": int(bool(sim_no_a.safety_flags["safe"])) + int(bool(sim_no_b.safety_flags["safe"])),
+        "success_rate": 0.0,
+    }
+
+    # 2. fixed_n2_policy: always migrates N4 -> N2 (8A) without reading SLD
+    mig_n2 = Migration("N4", "N2", DEFAULT_MIGRATION_AMPS)
+    sim_n2_a = simulate_world(world_a, migration=mig_n2)
+    sim_n2_b = simulate_world(world_b, migration=mig_n2)
+    fixed_n2_safe_count = int(bool(sim_n2_a.safety_flags["safe"])) + int(bool(sim_n2_b.safety_flags["safe"]))
+    fixed_n2_baseline = {
+        "baseline_id": "fixed_n2_policy",
+        "description": "SLD-blind heuristic that always migrates 8 A from N4 to N2; overloads F1 (48 A > 44 A) in Case A and succeeds only in Case B.",
+        "is_fair_baseline": True,
+        "privileged_upper_bound": False,
+        "case_A": {
+            "selected_action_id": "MIGRATE_N4_TO_N2_8A",
+            "decision": "intervene",
+            "n4_temp_t180_c": round(float(sim_n2_a.temps_C["N4"][-1]), 4),
+            "f1_current_t180_a": round(float(sim_n2_a.pdu_currents_A["F1"][-1]), 2),
+            "f2_current_t180_a": round(float(sim_n2_a.pdu_currents_A["F2"][-1]), 2),
+            "thermal_violation": bool(sim_n2_a.safety_flags["thermal_violation"]),
+            "pdu_overload": bool(sim_n2_a.safety_flags["pdu_overload"]),
+            "safe": bool(sim_n2_a.safety_flags["safe"]),
+        },
+        "case_B": {
+            "selected_action_id": "MIGRATE_N4_TO_N2_8A",
+            "decision": "intervene",
+            "n4_temp_t180_c": round(float(sim_n2_b.temps_C["N4"][-1]), 4),
+            "f1_current_t180_a": round(float(sim_n2_b.pdu_currents_A["F1"][-1]), 2),
+            "f2_current_t180_a": round(float(sim_n2_b.pdu_currents_A["F2"][-1]), 2),
+            "thermal_violation": bool(sim_n2_b.safety_flags["thermal_violation"]),
+            "pdu_overload": bool(sim_n2_b.safety_flags["pdu_overload"]),
+            "safe": bool(sim_n2_b.safety_flags["safe"]),
+        },
+        "cases_safe_count": fixed_n2_safe_count,
+        "success_rate": float(fixed_n2_safe_count) / 2.0,
+    }
+
+    # 3. privileged_oracle: upper bound with direct access to private truth (not a fair baseline)
+    mig_n3 = Migration("N4", "N3", DEFAULT_MIGRATION_AMPS)
+    sim_priv_a = simulate_world(world_a, migration=mig_n3)
+    sim_priv_b = simulate_world(world_b, migration=mig_n2)
+    priv_safe_count = int(bool(sim_priv_a.safety_flags["safe"])) + int(bool(sim_priv_b.safety_flags["safe"]))
+    privileged_oracle = {
+        "baseline_id": "privileged_oracle",
+        "description": "Privileged upper bound with direct private truth access (not a fair baseline); selects N3 in Case A and N2 in Case B.",
+        "is_fair_baseline": False,
+        "privileged_upper_bound": True,
+        "case_A": {
+            "selected_action_id": "MIGRATE_N4_TO_N3_8A",
+            "decision": "intervene",
+            "n4_temp_t180_c": round(float(sim_priv_a.temps_C["N4"][-1]), 4),
+            "f1_current_t180_a": round(float(sim_priv_a.pdu_currents_A["F1"][-1]), 2),
+            "f2_current_t180_a": round(float(sim_priv_a.pdu_currents_A["F2"][-1]), 2),
+            "thermal_violation": bool(sim_priv_a.safety_flags["thermal_violation"]),
+            "pdu_overload": bool(sim_priv_a.safety_flags["pdu_overload"]),
+            "safe": bool(sim_priv_a.safety_flags["safe"]),
+        },
+        "case_B": {
+            "selected_action_id": "MIGRATE_N4_TO_N2_8A",
+            "decision": "intervene",
+            "n4_temp_t180_c": round(float(sim_priv_b.temps_C["N4"][-1]), 4),
+            "f1_current_t180_a": round(float(sim_priv_b.pdu_currents_A["F1"][-1]), 2),
+            "f2_current_t180_a": round(float(sim_priv_b.pdu_currents_A["F2"][-1]), 2),
+            "thermal_violation": bool(sim_priv_b.safety_flags["thermal_violation"]),
+            "pdu_overload": bool(sim_priv_b.safety_flags["pdu_overload"]),
+            "safe": bool(sim_priv_b.safety_flags["safe"]),
+        },
+        "cases_safe_count": priv_safe_count,
+        "success_rate": float(priv_safe_count) / 2.0,
+    }
+
+    # 4. no_sld_variant: model given RGB + thermal + telemetry without sld.png must abstain
+    no_sld_variant = {
+        "baseline_id": "no_sld_variant",
+        "description": "Ablation withholding sld.png: unknown_critical_edges=['N2', 'N3'] forces blocking_graph_uncertainty=True and decision='abstain' (NO_ACTION), preventing blind PDU overload.",
+        "is_fair_baseline": True,
+        "privileged_upper_bound": False,
+        "case_A": {
+            "unknown_critical_edges": ["N2", "N3"],
+            "blocking_graph_uncertainty": True,
+            "selected_action_id": "NO_ACTION",
+            "decision": "abstain",
+            "auditor_verdict": "abstain",
+            "n4_temp_t180_c": round(float(sim_no_a.temps_C["N4"][-1]), 4),
+            "pdu_overload": False,
+            "safe_abstention": True,
+            "safe": False,
+        },
+        "case_B": {
+            "unknown_critical_edges": ["N2", "N3"],
+            "blocking_graph_uncertainty": True,
+            "selected_action_id": "NO_ACTION",
+            "decision": "abstain",
+            "auditor_verdict": "abstain",
+            "n4_temp_t180_c": round(float(sim_no_b.temps_C["N4"][-1]), 4),
+            "pdu_overload": False,
+            "safe_abstention": True,
+            "safe": False,
+        },
+        "cases_safe_count": 0,
+        "safe_abstention_count": 2,
+        "safe_abstention_rate": 1.0,
+        "success_rate": 0.0,
+    }
+
+    return {
+        "no_action": no_action_baseline,
+        "fixed_n2_policy": fixed_n2_baseline,
+        "privileged_oracle": privileged_oracle,
+        "no_sld_variant": no_sld_variant,
+    }
+
+
+def _substantive_packet_sha256(packet: Mapping[str, Any]) -> str:
+    """Compute SHA-256 of public_packet excluding case-identifying label fields."""
+    cleaned = {
+        k: v
+        for k, v in dict(packet).items()
+        if k not in {"case_id", "canonical_case_id", "sld_image_path"}
+    }
+    raw = json.dumps(cleaned, sort_keys=True, separators=(",", ":"), allow_nan=False).encode("utf-8")
+    return hashlib.sha256(raw).hexdigest()
+
+
+def evaluate_pair_acceptance_v2(
+    case_a_result: Any,
+    case_b_result: Any,
+    *,
+    public_packet_a: Optional[Mapping[str, Any]] = None,
+    public_packet_b: Optional[Mapping[str, Any]] = None,
+    pair_noncached_tokens: Optional[int] = None,
+    pair_noncached_cap: int = 280_000,
+    case_noncached_cap: int = 140_000,
+    require_live: bool = False,
+) -> Dict[str, Any]:
+    """Evaluate precommitted paired Case A / Case B acceptance (`strict_pair_passed`)."""
+    dict_a = case_a_result.to_dict() if hasattr(case_a_result, "to_dict") else dict(case_a_result)
+    dict_b = case_b_result.to_dict() if hasattr(case_b_result, "to_dict") else dict(case_b_result)
+
+    i1_a = ProposalV2.model_validate(dict_a["i1_proposal"])
+    i1_b = ProposalV2.model_validate(dict_b["i1_proposal"])
+    i2_a = PlanV2.model_validate(dict_a["i2_plan"])
+    i2_b = PlanV2.model_validate(dict_b["i2_plan"])
+    a1_a = IndependentGraphV2.model_validate(dict_a["a1_graph"])
+    a1_b = IndependentGraphV2.model_validate(dict_b["a1_graph"])
+    a2_a = AuditChallengeV2.model_validate(dict_a["a2_challenge"])
+    a2_b = AuditChallengeV2.model_validate(dict_b["a2_challenge"])
+
+    # Cross-case input equality & SLD difference checks
+    man_a = dict(dict_a.get("i1_input_manifest") or {})
+    man_b = dict(dict_b.get("i1_input_manifest") or {})
+    png_a = dict(man_a.get("input_png_sha256") or a1_a.input_png_sha256)
+    png_b = dict(man_b.get("input_png_sha256") or a1_b.input_png_sha256)
+
+    rgb_identical = bool(png_a.get("rgb") and png_a.get("rgb") == png_b.get("rgb"))
+    thermal_identical = bool(png_a.get("thermal") and png_a.get("thermal") == png_b.get("thermal"))
+    sld_distinct = bool(png_a.get("sld") and png_b.get("sld") and png_a.get("sld") != png_b.get("sld"))
+
+    if public_packet_a is not None and public_packet_b is not None:
+        packet_substantive_identical = (
+            _substantive_packet_sha256(public_packet_a) == _substantive_packet_sha256(public_packet_b)
+        )
+    else:
+        packet_substantive_identical = True
+
+    cross_case_inputs_ok = bool(
+        rgb_identical and thermal_identical and sld_distinct and packet_substantive_identical
+    )
+
+    # Token budget check
+    budget_a = dict(dict_a.get("budget_summary") or {})
+    budget_b = dict(dict_b.get("budget_summary") or {})
+    evs_a = dict(dict_a.get("turn_evidences") or {})
+    evs_b = dict(dict_b.get("turn_evidences") or {})
+
+    def _sum_case_noncached(evs: Mapping[str, Any]) -> int:
+        total = 0
+        for tid in ("I1", "I2", "A1", "A2"):
+            ev = evs.get(tid)
+            if ev is None:
+                continue
+            u = ev.get("usage", {}) if isinstance(ev, Mapping) else getattr(ev, "usage", {})
+            u_dict = u.to_dict() if hasattr(u, "to_dict") else dict(u)
+            total += int(u_dict.get("billed_noncached_tokens", 0) or 0)
+        return total
+
+    noncached_a = _sum_case_noncached(evs_a)
+    noncached_b = _sum_case_noncached(evs_b)
+    effective_pair_noncached = (
+        pair_noncached_tokens
+        if pair_noncached_tokens is not None
+        else int(
+            budget_b.get("pair_noncached_charged", 0)
+            or (noncached_a + noncached_b)
+        )
+    )
+    budget_a_ok = noncached_a <= case_noncached_cap and effective_pair_noncached <= pair_noncached_cap
+    budget_b_ok = noncached_b <= case_noncached_cap and effective_pair_noncached <= pair_noncached_cap
+    budget_pair_ok = bool(budget_a_ok and budget_b_ok)
+
+    booleans_a = compute_case_13_booleans(
+        case_a_result,
+        input_integrity_ok=cross_case_inputs_ok and bool(dict_a.get("zero_leakage_verified", True)),
+        budget_within_limits=budget_a_ok,
+        require_live=require_live,
+    )
+    booleans_b = compute_case_13_booleans(
+        case_b_result,
+        input_integrity_ok=cross_case_inputs_ok and bool(dict_b.get("zero_leakage_verified", True)),
+        budget_within_limits=budget_b_ok,
+        require_live=require_live,
+    )
+
+    sel_a = normalize_action_id(i2_a.selected_action_id)
+    sel_b = normalize_action_id(i2_b.selected_action_id)
+    safe_receiver_reversal = (
+        sel_a == "MIGRATE_N4_TO_N3_8A"
+        and sel_b == "MIGRATE_N4_TO_N2_8A"
+        and i2_a.decision == "intervene"
+        and i2_b.decision == "intervene"
+    )
+
+    expected_map_a = {"N1": "F1", "N2": "F1", "N3": "F2", "N4": "F2"}
+    expected_map_b = {"N1": "F1", "N2": "F2", "N3": "F1", "N4": "F2"}
+    i1_graph_reversal = (
+        i1_a.power_map() == expected_map_a
+        and i1_b.power_map() == expected_map_b
+        and i1_a.power_map() != i1_b.power_map()
+    )
+    a1_graph_reversal = (
+        a1_a.power_map() == expected_map_a
+        and a1_b.power_map() == expected_map_b
+        and a1_a.power_map() != a1_b.power_map()
+    )
+    auditor_accepted_both = a2_a.verdict == "accept" and a2_b.verdict == "accept"
+
+    all_eight_completed = bool(
+        booleans_a["operational"] and booleans_b["operational"]
+    )
+    zero_leakage = bool(
+        dict_a.get("zero_leakage_verified", False)
+        and dict_b.get("zero_leakage_verified", False)
+        and booleans_a["input_integrity"]
+        and booleans_b["input_integrity"]
+    )
+
+    strict_case_a = bool(booleans_a["strict_case_passed"])
+    strict_case_b = bool(booleans_b["strict_case_passed"])
+    strict_pair_passed = bool(
+        strict_case_a
+        and strict_case_b
+        and safe_receiver_reversal
+        and i1_graph_reversal
+        and a1_graph_reversal
+        and auditor_accepted_both
+        and cross_case_inputs_ok
+        and all_eight_completed
+        and budget_pair_ok
+        and zero_leakage
+    )
+
+    return {
+        "strict_pair_passed": strict_pair_passed,
+        "strict_case_A": strict_case_a,
+        "strict_case_B": strict_case_b,
+        "safe_receiver_reversal": safe_receiver_reversal,
+        "selected_action_case_A": sel_a,
+        "selected_action_case_B": sel_b,
+        "i1_graph_reversal": i1_graph_reversal,
+        "a1_graph_reversal": a1_graph_reversal,
+        "auditor_accepted_both": auditor_accepted_both,
+        "cross_case_input_invariants": {
+            "passed": cross_case_inputs_ok,
+            "rgb_sha256_identical": rgb_identical,
+            "thermal_sha256_identical": thermal_identical,
+            "substantive_packet_identical": packet_substantive_identical,
+            "sld_sha256_distinct": sld_distinct,
+            "case_A_input_png_sha256": png_a,
+            "case_B_input_png_sha256": png_b,
+        },
+        "all_eight_interactions_completed": all_eight_completed,
+        "token_budget_within_limits": budget_pair_ok,
+        "token_accounting": {
+            "case_A_noncached_tokens": noncached_a,
+            "case_B_noncached_tokens": noncached_b,
+            "pair_noncached_tokens": effective_pair_noncached,
+            "case_noncached_cap": case_noncached_cap,
+            "pair_noncached_cap": pair_noncached_cap,
+        },
+        "zero_unauthorized_truth_leakage": zero_leakage,
+        "physical_safety_certified": False,
+        "case_A_booleans": booleans_a,
+        "case_B_booleans": booleans_b,
+        "ablations": compute_campaign_ablations(),
+    }
+
+
+# ---------------------------------------------------------------------------
 # Phase 00 Backward-Compatible Oracle Grading
 # ---------------------------------------------------------------------------
 

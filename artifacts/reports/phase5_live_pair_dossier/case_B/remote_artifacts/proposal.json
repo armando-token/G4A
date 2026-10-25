@@ -1,0 +1,86 @@
+{
+  "case_id": "B",
+  "edges": [
+    {
+      "evidence_ref": "sld:branch",
+      "pdu": "F1",
+      "rack": "N1"
+    },
+    {
+      "evidence_ref": "sld:branch",
+      "pdu": "F2",
+      "rack": "N2"
+    },
+    {
+      "evidence_ref": "sld:branch",
+      "pdu": "F1",
+      "rack": "N3"
+    },
+    {
+      "evidence_ref": "sld:branch",
+      "pdu": "F2",
+      "rack": "N4"
+    }
+  ],
+  "hotspot": {
+    "asset_id": "N4",
+    "bbox_xyxy_px": [
+      1080,
+      325,
+      1144,
+      394
+    ],
+    "confidence": 0.95,
+    "evidence_refs": [
+      "thermal:visible-hotspot",
+      "rgb:connector"
+    ],
+    "surface": "rear_visible_connector"
+  },
+  "hypotheses": [
+    {
+      "c_j_per_k": 8.0,
+      "description": "",
+      "h_w_per_k": 0.4,
+      "hypothesis_id": "H1_electrical",
+      "r0_ohm": 0.04
+    },
+    {
+      "c_j_per_k": 4.0,
+      "description": "",
+      "h_w_per_k": 0.2,
+      "hypothesis_id": "H2_cooling",
+      "r0_ohm": 0.02
+    }
+  ],
+  "role": "investigator_proposal",
+  "schema_version": "visual-v2",
+  "selected_measurement": {
+    "rationale": "Measure voltage drop across the overheated rack connector to disambiguate electrical resistance from cooling degradation.",
+    "target_asset": "N4",
+    "type": "voltage_drop"
+  },
+  "sensor_edges": [
+    {
+      "evidence_ref": "sld:sensor",
+      "rack_id": "N1",
+      "sensor_id": "SNS_K1"
+    },
+    {
+      "evidence_ref": "sld:sensor",
+      "rack_id": "N4",
+      "sensor_id": "SNS_K2"
+    },
+    {
+      "evidence_ref": "sld:sensor",
+      "rack_id": "N2",
+      "sensor_id": "SNS_K3"
+    },
+    {
+      "evidence_ref": "sld:sensor",
+      "rack_id": "N3",
+      "sensor_id": "SNS_K4"
+    }
+  ],
+  "unknown_critical_edges": []
+}

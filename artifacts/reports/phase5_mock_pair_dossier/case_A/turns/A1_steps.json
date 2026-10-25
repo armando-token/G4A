@@ -1,0 +1,13 @@
+[
+  {
+    "artifact_canonical_sha256": "3ee465b95b10aa49d27b4d4611958127869a872f3240b86dfda2a227bf6ebf17",
+    "artifact_written": "independent_graph.json",
+    "environment_id": "env-auditor-002",
+    "interaction_id": "inter-v2-0003",
+    "name": "python",
+    "status": "completed",
+    "step_index": 0,
+    "turn_id": "A1",
+    "type": "code_execution"
+  }
+]

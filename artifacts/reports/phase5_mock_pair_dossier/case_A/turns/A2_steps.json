@@ -1,0 +1,13 @@
+[
+  {
+    "artifact_canonical_sha256": "a5b82e866f2f2cee95d9df957b7e5f401c15825e3f5b8faf746e542c43186774",
+    "artifact_written": "audit_challenge.json",
+    "environment_id": "env-auditor-002",
+    "interaction_id": "inter-v2-0004",
+    "name": "python",
+    "status": "completed",
+    "step_index": 0,
+    "turn_id": "A2",
+    "type": "code_execution"
+  }
+]

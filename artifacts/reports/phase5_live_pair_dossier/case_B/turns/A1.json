@@ -1,0 +1,70 @@
+{
+  "canonical_sha256": "0c203525c98affa56ff09ab6b88587e5c47b754059217a497f796cb57c6e049a",
+  "case_id": "case_B",
+  "diagnostic_only": false,
+  "elapsed_s": 34.5515,
+  "environment_id": "f1bd02455827b94ebc4d3d9c8bee0315",
+  "error": null,
+  "expected_filename": "independent_graph.json",
+  "has_code_execution_step": true,
+  "interaction_id": "v1_Chc5RjNlYXMtbUZOS095dE1Qekt1SXlRURIXOUYzZWFzLW1GTktPeXRNUHpLdUl5UVE",
+  "lock_chain_hash": "feb33b9000623119564facd277d2d1bb6baef84e9cfaaaa29b1b3c777b4a3317",
+  "lock_stage": "L3_A1_GRAPH",
+  "poll_count": 16,
+  "requested_agent": "antigravity-preview-09-2026",
+  "requested_model": "gemini-4-argon",
+  "retrieved_path": "independent_graph.json",
+  "retrieved_sha256": "4394ecbf06c52072d88d07378a3c30909f36a0a740ba0764ea86b2782ec69d54",
+  "returned_model": "gemini-4-argon",
+  "role": "auditor_visual",
+  "run_id": "run-ee7b041dcd8c",
+  "scientific_complete": true,
+  "status": "completed",
+  "turn_id": "A1",
+  "usage": {
+    "billed_noncached_tokens": 16603,
+    "cached_inclusive_tokens": 25436,
+    "cached_tokens": 8833,
+    "input_tokens": 0,
+    "noncached_tokens": 16603,
+    "output_tokens": 0,
+    "raw_usage": {
+      "cached_tokens_by_modality": [
+        {
+          "modality": "text",
+          "tokens": 6552
+        },
+        {
+          "modality": "image",
+          "tokens": 2281
+        }
+      ],
+      "input_tokens_by_modality": [
+        {
+          "modality": "text",
+          "tokens": 17155
+        },
+        {
+          "modality": "image",
+          "tokens": 6552
+        }
+      ],
+      "output_tokens_by_modality": [
+        {
+          "modality": "text",
+          "tokens": 917
+        }
+      ],
+      "total_cached_tokens": 8833,
+      "total_input_tokens": 23707,
+      "total_output_tokens": 917,
+      "total_thought_tokens": 812,
+      "total_tokens": 25436,
+      "total_tool_use_tokens": 0
+    },
+    "thoughts_tokens": 0,
+    "tool_use_tokens": 0,
+    "total_tokens": 25436,
+    "unknown_usage": false
+  }
+}

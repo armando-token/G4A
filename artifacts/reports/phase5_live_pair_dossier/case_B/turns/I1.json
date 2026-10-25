@@ -1,0 +1,70 @@
+{
+  "canonical_sha256": "b81ef999d3eae1c1bca91df5da7d4bef8571ef3a8945eb3bed17fd3773c224a7",
+  "case_id": "case_B",
+  "diagnostic_only": false,
+  "elapsed_s": 34.0914,
+  "environment_id": "fdc6cb576b75a9c93cd32d42ae3ce138",
+  "error": null,
+  "expected_filename": "proposal.json",
+  "has_code_execution_step": true,
+  "interaction_id": "v1_ChdxMTNlYXR5RElkRGl5dE1QZzRIMXNRURIXcTEzZWF0eURJZERpeXRNUGc0SDFzUVE",
+  "lock_chain_hash": "21c8e6d9abb8a000f1882541ee5abc00dd499579c8f4e2a23da337688c2260e1",
+  "lock_stage": "L1_I1_PROPOSAL",
+  "poll_count": 17,
+  "requested_agent": "antigravity-preview-09-2026",
+  "requested_model": "gemini-4-argon",
+  "retrieved_path": "proposal.json",
+  "retrieved_sha256": "71421d4e271f8f5fb26ae2c199fd9dbaed02e0074ea6d7189660f66c0dbdac06",
+  "returned_model": "gemini-4-argon",
+  "role": "investigator_proposal",
+  "run_id": "run-bb7d51fb4035",
+  "scientific_complete": true,
+  "status": "completed",
+  "turn_id": "I1",
+  "usage": {
+    "billed_noncached_tokens": 16375,
+    "cached_inclusive_tokens": 25030,
+    "cached_tokens": 8655,
+    "input_tokens": 0,
+    "noncached_tokens": 16375,
+    "output_tokens": 0,
+    "raw_usage": {
+      "cached_tokens_by_modality": [
+        {
+          "modality": "text",
+          "tokens": 6388
+        },
+        {
+          "modality": "image",
+          "tokens": 2267
+        }
+      ],
+      "input_tokens_by_modality": [
+        {
+          "modality": "text",
+          "tokens": 16796
+        },
+        {
+          "modality": "image",
+          "tokens": 6552
+        }
+      ],
+      "output_tokens_by_modality": [
+        {
+          "modality": "text",
+          "tokens": 763
+        }
+      ],
+      "total_cached_tokens": 8655,
+      "total_input_tokens": 23348,
+      "total_output_tokens": 763,
+      "total_thought_tokens": 919,
+      "total_tokens": 25030,
+      "total_tool_use_tokens": 0
+    },
+    "thoughts_tokens": 0,
+    "tool_use_tokens": 0,
+    "total_tokens": 25030,
+    "unknown_usage": false
+  }
+}

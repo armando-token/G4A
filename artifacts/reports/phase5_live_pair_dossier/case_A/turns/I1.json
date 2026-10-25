@@ -1,0 +1,70 @@
+{
+  "canonical_sha256": "e5789fd8653477e6ee025413ca64139ef4a19f4e187f9ff2c7001427a4e5b9c2",
+  "case_id": "case_A",
+  "diagnostic_only": false,
+  "elapsed_s": 38.6033,
+  "environment_id": "3cf5af50a09cbe0dc9b6680e1544627f",
+  "error": null,
+  "expected_filename": "proposal.json",
+  "has_code_execution_step": true,
+  "interaction_id": "v1_Chc1MXplYXZtaUtlNkZ5dE1QMlpiUXdBNBIXNTF6ZWF2bWlLZTZGeXRNUDJaYlF3QTQ",
+  "lock_chain_hash": "e949c792bd04c2a01664df759ec755d08155fcb232efd195196dd7e361f11b45",
+  "lock_stage": "L1_I1_PROPOSAL",
+  "poll_count": 16,
+  "requested_agent": "antigravity-preview-09-2026",
+  "requested_model": "gemini-4-argon",
+  "retrieved_path": "workspace/proposal.json",
+  "retrieved_sha256": "84dc7b432d05093f6c6cceaa5882e781a4d72fbaa891fd3e1e4d11b1a836f400",
+  "returned_model": "gemini-4-argon",
+  "role": "investigator_proposal",
+  "run_id": "run-e03e4464354f",
+  "scientific_complete": true,
+  "status": "completed",
+  "turn_id": "I1",
+  "usage": {
+    "billed_noncached_tokens": 15685,
+    "cached_inclusive_tokens": 24340,
+    "cached_tokens": 8655,
+    "input_tokens": 0,
+    "noncached_tokens": 15685,
+    "output_tokens": 0,
+    "raw_usage": {
+      "cached_tokens_by_modality": [
+        {
+          "modality": "text",
+          "tokens": 6317
+        },
+        {
+          "modality": "image",
+          "tokens": 2338
+        }
+      ],
+      "input_tokens_by_modality": [
+        {
+          "modality": "text",
+          "tokens": 16421
+        },
+        {
+          "modality": "image",
+          "tokens": 6552
+        }
+      ],
+      "output_tokens_by_modality": [
+        {
+          "modality": "text",
+          "tokens": 793
+        }
+      ],
+      "total_cached_tokens": 8655,
+      "total_input_tokens": 22973,
+      "total_output_tokens": 793,
+      "total_thought_tokens": 574,
+      "total_tokens": 24340,
+      "total_tool_use_tokens": 0
+    },
+    "thoughts_tokens": 0,
+    "tool_use_tokens": 0,
+    "total_tokens": 24340,
+    "unknown_usage": false
+  }
+}

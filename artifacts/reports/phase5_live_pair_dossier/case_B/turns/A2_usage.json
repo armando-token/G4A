@@ -1,0 +1,38 @@
+{
+  "billed_noncached_tokens": 29390,
+  "cached_inclusive_tokens": 43212,
+  "cached_tokens": 13822,
+  "input_tokens": 0,
+  "noncached_tokens": 29390,
+  "output_tokens": 0,
+  "raw_usage": {
+    "cached_tokens_by_modality": [
+      {
+        "modality": "text",
+        "tokens": 13822
+      }
+    ],
+    "input_tokens_by_modality": [
+      {
+        "modality": "text",
+        "tokens": 35433
+      }
+    ],
+    "output_tokens_by_modality": [
+      {
+        "modality": "text",
+        "tokens": 7741
+      }
+    ],
+    "total_cached_tokens": 13822,
+    "total_input_tokens": 35433,
+    "total_output_tokens": 7741,
+    "total_thought_tokens": 38,
+    "total_tokens": 43212,
+    "total_tool_use_tokens": 0
+  },
+  "thoughts_tokens": 0,
+  "tool_use_tokens": 0,
+  "total_tokens": 43212,
+  "unknown_usage": false
+}

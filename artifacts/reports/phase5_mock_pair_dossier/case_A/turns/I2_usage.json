@@ -1,0 +1,20 @@
+{
+  "billed_noncached_tokens": 2050,
+  "cached_inclusive_tokens": 2250,
+  "cached_tokens": 200,
+  "input_tokens": 1200,
+  "noncached_tokens": 2050,
+  "output_tokens": 600,
+  "raw_usage": {
+    "cached_tokens": 200,
+    "input_tokens": 1200,
+    "output_tokens": 600,
+    "thoughts_tokens": 150,
+    "tool_use_tokens": 100,
+    "total_tokens": 2250
+  },
+  "thoughts_tokens": 150,
+  "tool_use_tokens": 100,
+  "total_tokens": 2250,
+  "unknown_usage": false
+}

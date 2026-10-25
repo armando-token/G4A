@@ -1,0 +1,62 @@
+{
+  "canonical_sha256": "205a4c8d481bdf4180d391672e1182e42e0a6413513e65f4196a042ff7bf3319",
+  "case_id": "case_B",
+  "diagnostic_only": false,
+  "elapsed_s": 71.7488,
+  "environment_id": "f1bd02455827b94ebc4d3d9c8bee0315",
+  "error": null,
+  "expected_filename": "audit_challenge.json",
+  "has_code_execution_step": true,
+  "interaction_id": "v1_ChdGVjdlYXBLaEM3Q0Z5dE1QamZtUjZBURIXRlY3ZWFwS2hDN0NGeXRNUGpmbVI2QVE",
+  "lock_chain_hash": "5d0adff1920be76824dccb78af6799d8f774095398cf8ade1d8f43f10e06c0c6",
+  "lock_stage": "L4_A2_CHALLENGE",
+  "poll_count": 43,
+  "requested_agent": "antigravity-preview-09-2026",
+  "requested_model": "gemini-4-argon",
+  "retrieved_path": "audit_challenge.json",
+  "retrieved_sha256": "19cf55db67e663010d08c9a52cf2e7e911bcc5c65bffcc44cb78fd10e3e056be",
+  "returned_model": "gemini-4-argon",
+  "role": "auditor_challenge",
+  "run_id": "run-609f41fe64e1",
+  "scientific_complete": true,
+  "status": "completed",
+  "turn_id": "A2",
+  "usage": {
+    "billed_noncached_tokens": 29390,
+    "cached_inclusive_tokens": 43212,
+    "cached_tokens": 13822,
+    "input_tokens": 0,
+    "noncached_tokens": 29390,
+    "output_tokens": 0,
+    "raw_usage": {
+      "cached_tokens_by_modality": [
+        {
+          "modality": "text",
+          "tokens": 13822
+        }
+      ],
+      "input_tokens_by_modality": [
+        {
+          "modality": "text",
+          "tokens": 35433
+        }
+      ],
+      "output_tokens_by_modality": [
+        {
+          "modality": "text",
+          "tokens": 7741
+        }
+      ],
+      "total_cached_tokens": 13822,
+      "total_input_tokens": 35433,
+      "total_output_tokens": 7741,
+      "total_thought_tokens": 38,
+      "total_tokens": 43212,
+      "total_tool_use_tokens": 0
+    },
+    "thoughts_tokens": 0,
+    "tool_use_tokens": 0,
+    "total_tokens": 43212,
+    "unknown_usage": false
+  }
+}

@@ -1,0 +1,13 @@
+[
+  {
+    "artifact_canonical_sha256": "e5789fd8653477e6ee025413ca64139ef4a19f4e187f9ff2c7001427a4e5b9c2",
+    "artifact_written": "proposal.json",
+    "environment_id": "3cf5af50a09cbe0dc9b6680e1544627f",
+    "interaction_id": "v1_Chc1MXplYXZtaUtlNkZ5dE1QMlpiUXdBNBIXNTF6ZWF2bWlLZTZGeXRNUDJaYlF3QTQ",
+    "name": "python",
+    "status": "completed",
+    "step_index": 0,
+    "turn_id": "I1",
+    "type": "code_execution"
+  }
+]

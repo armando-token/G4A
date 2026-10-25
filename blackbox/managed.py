@@ -1094,12 +1094,17 @@ def _build_inline_sources(role: str, expected_filename: str, packet: Mapping[str
     domain_path = Path(__file__).resolve().parent / "domain.py"
     domain_text = domain_path.read_text(encoding="utf-8")
 
-    agents_md_text = (
-        f"# BlackboxDC Sandbox Workspace ({role})\n\n"
-        f"- Execute electro-thermal calculations using `domain.py` and `public_packet.json`.\n"
-        f"- Write your final validated JSON output to `{expected_filename}` in the workspace.\n"
-        f"- Do not rely on console text output alone; `{expected_filename}` is retrieved directly.\n"
-    )
+    try:
+        from blackbox.agent_harness import build_role_agents_md
+
+        agents_md_text = build_role_agents_md(role)
+    except Exception:
+        agents_md_text = (
+            f"# BlackboxDC Sandbox Workspace ({role})\n\n"
+            f"- Execute electro-thermal calculations using `domain.py` and `public_packet.json`.\n"
+            f"- Write your final validated JSON output to `{expected_filename}` in the workspace.\n"
+            f"- Do not rely on console text output alone; `{expected_filename}` is retrieved directly.\n"
+        )
 
     packet_text = json.dumps(dict(packet), indent=2, sort_keys=True) + "\n"
 
@@ -1131,19 +1136,66 @@ def _extract_inter_field(inter: Any, key: str, default: Any = None) -> Any:
     return getattr(inter, key, default)
 
 
+def extract_interaction_steps(inter: Any) -> List[Dict[str, Any]]:
+    """Extract and redact structured interaction steps (`I1_steps.json`..`A2_steps.json`)."""
+    raw_steps = _extract_inter_field(inter, "steps")
+    if not raw_steps or not isinstance(raw_steps, (list, tuple)):
+        return []
+    out: List[Dict[str, Any]] = []
+    for idx, st in enumerate(raw_steps):
+        if hasattr(st, "model_dump"):
+            try:
+                st_dict = st.model_dump(mode="json")
+            except TypeError:
+                st_dict = st.model_dump()
+        elif isinstance(st, Mapping):
+            st_dict = dict(st)
+        else:
+            st_dict = {
+                "step_index": idx,
+                "type": str(getattr(st, "type", "") or type(st).__name__),
+                "name": str(getattr(st, "name", "") or ""),
+            }
+        redacted = redact_for_log(st_dict)
+        if isinstance(redacted, Mapping):
+            out.append(dict(redacted))
+        else:
+            out.append({"step_index": idx, "value": redacted})
+    return out
+
+
 def _has_code_execution_step(inter: Any) -> bool:
     """Return True if the interaction contains at least one `code_execution` or workspace tool step."""
     steps = _extract_inter_field(inter, "steps")
-    if not steps:
-        return False
-    for st in steps:
-        st_type = str(_extract_inter_field(st, "type", "") or _extract_inter_field(st, "tool", "")).lower()
-        st_name = str(_extract_inter_field(st, "name", "")).lower()
-        if any(
-            tok in st_type or tok in st_name
-            for tok in ("code_execution", "function_call", "function_result", "python", "bash", "run_command", "write_file")
-        ):
-            return True
+    if steps:
+        for st in steps:
+            st_type = str(_extract_inter_field(st, "type", "") or _extract_inter_field(st, "tool", "")).lower()
+            st_name = str(_extract_inter_field(st, "name", "")).lower()
+            st_cls = type(st).__name__.lower()
+            if any(
+                tok in st_type or tok in st_name or tok in st_cls
+                for tok in (
+                    "code_execution",
+                    "codeexecution",
+                    "function_call",
+                    "functioncall",
+                    "function_result",
+                    "functionresult",
+                    "python",
+                    "bash",
+                    "run_command",
+                    "write_file",
+                )
+            ):
+                return True
+    raw_u = _extract_inter_field(inter, "usage")
+    if raw_u is not None:
+        tool_toks = _extract_inter_field(raw_u, "total_tool_use_tokens", 0)
+        try:
+            if int(tool_toks or 0) > 0:
+                return True
+        except (TypeError, ValueError):
+            pass
     return False
 
 
@@ -1170,6 +1222,7 @@ class TurnEvidence:
     poll_count: int
     elapsed_s: float
     error: Optional[str] = None
+    steps: List[Dict[str, Any]] = field(default_factory=list)
 
     def to_dict(self) -> Dict[str, Any]:
         d = asdict(self)
@@ -1427,6 +1480,7 @@ def run_turn(
     )
 
     has_code_step = _has_code_execution_step(latest_inter)
+    extracted_steps = extract_interaction_steps(latest_inter)
     retrieved_json: Optional[Dict[str, Any]] = None
     retrieved_bytes_len: int = 0
     retrieved_sha256: Optional[str] = None
@@ -1519,6 +1573,7 @@ def run_turn(
         poll_count=poll_count,
         elapsed_s=elapsed_total,
         error=error_msg,
+        steps=extracted_steps,
     )
 
 

@@ -1,0 +1,86 @@
+{
+  "case_id": "case_A",
+  "edges": [
+    {
+      "evidence_ref": "sld.png",
+      "pdu": "F1",
+      "rack": "N1"
+    },
+    {
+      "evidence_ref": "sld.png",
+      "pdu": "F1",
+      "rack": "N2"
+    },
+    {
+      "evidence_ref": "sld.png",
+      "pdu": "F2",
+      "rack": "N3"
+    },
+    {
+      "evidence_ref": "sld.png",
+      "pdu": "F2",
+      "rack": "N4"
+    }
+  ],
+  "hotspot": {
+    "asset_id": "N4",
+    "bbox_xyxy_px": [
+      1079,
+      325,
+      1143,
+      393
+    ],
+    "confidence": 0.96,
+    "evidence_refs": [
+      "rgb.png",
+      "thermal.png"
+    ],
+    "surface": "rear_visible_connector"
+  },
+  "hypotheses": [
+    {
+      "c_j_per_k": 8.0,
+      "description": "High-resistance rear connector degradation on N4",
+      "h_w_per_k": 0.4,
+      "hypothesis_id": "electrical",
+      "r0_ohm": 0.04
+    },
+    {
+      "c_j_per_k": 4.0,
+      "description": "Local cooling degradation with nominal connector resistance",
+      "h_w_per_k": 0.2,
+      "hypothesis_id": "cooling",
+      "r0_ohm": 0.02
+    }
+  ],
+  "role": "investigator_proposal",
+  "schema_version": "visual-v2",
+  "selected_measurement": {
+    "rationale": "Disambiguate electrical resistance R0 vs cooling degradation on hot rack N4.",
+    "target_asset": "N4",
+    "type": "voltage_drop"
+  },
+  "sensor_edges": [
+    {
+      "evidence_ref": "sld.png",
+      "rack_id": "N1",
+      "sensor_id": "SNS_K1"
+    },
+    {
+      "evidence_ref": "sld.png",
+      "rack_id": "N4",
+      "sensor_id": "SNS_K2"
+    },
+    {
+      "evidence_ref": "sld.png",
+      "rack_id": "N2",
+      "sensor_id": "SNS_K3"
+    },
+    {
+      "evidence_ref": "sld.png",
+      "rack_id": "N3",
+      "sensor_id": "SNS_K4"
+    }
+  ],
+  "unknown_critical_edges": []
+}

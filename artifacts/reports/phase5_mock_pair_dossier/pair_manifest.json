@@ -1,0 +1,410 @@
+{
+  "campaign_run_id": "phase5_mock_pair_dossier",
+  "case_A_public_packet_sha256": "463dac8f803ca01939558398f84c5e6cdaad8fa5ae2583b926a220355b4fd830",
+  "case_A_substantive_packet_sha256": "c824b1217603da94bf6d7a6b2a96424c1d0be2b0d20a23b890c44a624dbc6ec6",
+  "case_B_public_packet_sha256": "463dac8f803ca01939558398f84c5e6cdaad8fa5ae2583b926a220355b4fd830",
+  "case_B_substantive_packet_sha256": "c824b1217603da94bf6d7a6b2a96424c1d0be2b0d20a23b890c44a624dbc6ec6",
+  "created_at_utc": "2026-10-25T19:47:33Z",
+  "execution_mode": "offline_deterministic",
+  "failed_attempts": [],
+  "pair_evaluation": {
+    "a1_graph_reversal": true,
+    "ablations": {
+      "fixed_n2_policy": {
+        "baseline_id": "fixed_n2_policy",
+        "case_A": {
+          "decision": "intervene",
+          "f1_current_t180_a": 48.0,
+          "f2_current_t180_a": 20.0,
+          "n4_temp_t180_c": 52.5348,
+          "pdu_overload": true,
+          "safe": false,
+          "selected_action_id": "MIGRATE_N4_TO_N2_8A",
+          "thermal_violation": false
+        },
+        "case_B": {
+          "decision": "intervene",
+          "f1_current_t180_a": 40.0,
+          "f2_current_t180_a": 28.0,
+          "n4_temp_t180_c": 52.5348,
+          "pdu_overload": false,
+          "safe": true,
+          "selected_action_id": "MIGRATE_N4_TO_N2_8A",
+          "thermal_violation": false
+        },
+        "cases_safe_count": 1,
+        "description": "SLD-blind heuristic that always migrates 8 A from N4 to N2; overloads F1 (48 A > 44 A) in Case A and succeeds only in Case B.",
+        "is_fair_baseline": true,
+        "privileged_upper_bound": false,
+        "success_rate": 0.5
+      },
+      "no_action": {
+        "baseline_id": "no_action",
+        "case_A": {
+          "decision": "abstain",
+          "f1_current_t180_a": 40.0,
+          "f2_current_t180_a": 28.0,
+          "n4_temp_t180_c": 98.8291,
+          "pdu_overload": false,
+          "safe": false,
+          "selected_action_id": "NO_ACTION",
+          "thermal_violation": true
+        },
+        "case_B": {
+          "decision": "abstain",
+          "f1_current_t180_a": 40.0,
+          "f2_current_t180_a": 28.0,
+          "n4_temp_t180_c": 98.8291,
+          "pdu_overload": false,
+          "safe": false,
+          "selected_action_id": "NO_ACTION",
+          "thermal_violation": true
+        },
+        "cases_safe_count": 0,
+        "description": "No load migration (selected_action_id='NO_ACTION'); N4 exceeds 90.0 C thermal limit in both cases.",
+        "is_fair_baseline": true,
+        "privileged_upper_bound": false,
+        "success_rate": 0.0
+      },
+      "no_sld_variant": {
+        "baseline_id": "no_sld_variant",
+        "case_A": {
+          "auditor_verdict": "abstain",
+          "blocking_graph_uncertainty": true,
+          "decision": "abstain",
+          "n4_temp_t180_c": 98.8291,
+          "pdu_overload": false,
+          "safe": false,
+          "safe_abstention": true,
+          "selected_action_id": "NO_ACTION",
+          "unknown_critical_edges": [
+            "N2",
+            "N3"
+          ]
+        },
+        "case_B": {
+          "auditor_verdict": "abstain",
+          "blocking_graph_uncertainty": true,
+          "decision": "abstain",
+          "n4_temp_t180_c": 98.8291,
+          "pdu_overload": false,
+          "safe": false,
+          "safe_abstention": true,
+          "selected_action_id": "NO_ACTION",
+          "unknown_critical_edges": [
+            "N2",
+            "N3"
+          ]
+        },
+        "cases_safe_count": 0,
+        "description": "Ablation withholding sld.png: unknown_critical_edges=['N2', 'N3'] forces blocking_graph_uncertainty=True and decision='abstain' (NO_ACTION), preventing blind PDU overload.",
+        "is_fair_baseline": true,
+        "privileged_upper_bound": false,
+        "safe_abstention_count": 2,
+        "safe_abstention_rate": 1.0,
+        "success_rate": 0.0
+      },
+      "privileged_oracle": {
+        "baseline_id": "privileged_oracle",
+        "case_A": {
+          "decision": "intervene",
+          "f1_current_t180_a": 40.0,
+          "f2_current_t180_a": 28.0,
+          "n4_temp_t180_c": 52.5348,
+          "pdu_overload": false,
+          "safe": true,
+          "selected_action_id": "MIGRATE_N4_TO_N3_8A",
+          "thermal_violation": false
+        },
+        "case_B": {
+          "decision": "intervene",
+          "f1_current_t180_a": 40.0,
+          "f2_current_t180_a": 28.0,
+          "n4_temp_t180_c": 52.5348,
+          "pdu_overload": false,
+          "safe": true,
+          "selected_action_id": "MIGRATE_N4_TO_N2_8A",
+          "thermal_violation": false
+        },
+        "cases_safe_count": 2,
+        "description": "Privileged upper bound with direct private truth access (not a fair baseline); selects N3 in Case A and N2 in Case B.",
+        "is_fair_baseline": false,
+        "privileged_upper_bound": true,
+        "success_rate": 1.0
+      }
+    },
+    "all_eight_interactions_completed": true,
+    "auditor_accepted_both": true,
+    "case_A_booleans": {
+      "auditor_challenge": true,
+      "auditor_independence": true,
+      "forecast": true,
+      "input_integrity": true,
+      "investigator_perception": true,
+      "measurement": true,
+      "model_and_action": true,
+      "native_multimodal_path": true,
+      "numerical_evidence_valid": true,
+      "operational": true,
+      "operational_complete": true,
+      "provenance": true,
+      "strict_case_passed": true
+    },
+    "case_B_booleans": {
+      "auditor_challenge": true,
+      "auditor_independence": true,
+      "forecast": true,
+      "input_integrity": true,
+      "investigator_perception": true,
+      "measurement": true,
+      "model_and_action": true,
+      "native_multimodal_path": true,
+      "numerical_evidence_valid": true,
+      "operational": true,
+      "operational_complete": true,
+      "provenance": true,
+      "strict_case_passed": true
+    },
+    "cross_case_input_invariants": {
+      "case_A_input_png_sha256": {
+        "rgb": "078444bac2d0a309733e07653c5b145fb3021ed0b95fd825bc7745fc374f7f38",
+        "sld": "0912ed15abc45921ee5e140ab4a5b60a87c67815af255d62ee056d378a1dd489",
+        "thermal": "2c29654fddec6815c5591b661a7c5e2130c073e4c0dee0fa4207b873105b33d2"
+      },
+      "case_B_input_png_sha256": {
+        "rgb": "078444bac2d0a309733e07653c5b145fb3021ed0b95fd825bc7745fc374f7f38",
+        "sld": "1ca852a6e9f846e56e38c735a5e88eb703fbc14f19d4cdcc3e90291af4143915",
+        "thermal": "2c29654fddec6815c5591b661a7c5e2130c073e4c0dee0fa4207b873105b33d2"
+      },
+      "passed": true,
+      "rgb_sha256_identical": true,
+      "sld_sha256_distinct": true,
+      "substantive_packet_identical": true,
+      "thermal_sha256_identical": true
+    },
+    "i1_graph_reversal": true,
+    "physical_safety_certified": false,
+    "safe_receiver_reversal": true,
+    "selected_action_case_A": "MIGRATE_N4_TO_N3_8A",
+    "selected_action_case_B": "MIGRATE_N4_TO_N2_8A",
+    "strict_case_A": true,
+    "strict_case_B": true,
+    "strict_pair_passed": true,
+    "token_accounting": {
+      "case_A_noncached_tokens": 8200,
+      "case_B_noncached_tokens": 8200,
+      "case_noncached_cap": 140000,
+      "pair_noncached_cap": 280000,
+      "pair_noncached_tokens": 16400
+    },
+    "token_budget_within_limits": true,
+    "zero_unauthorized_truth_leakage": true
+  },
+  "physical_safety_certified": false,
+  "precommitment": {
+    "ablations": {
+      "fixed_n2_policy": {
+        "baseline_id": "fixed_n2_policy",
+        "case_A": {
+          "decision": "intervene",
+          "f1_current_t180_a": 48.0,
+          "f2_current_t180_a": 20.0,
+          "n4_temp_t180_c": 52.5348,
+          "pdu_overload": true,
+          "safe": false,
+          "selected_action_id": "MIGRATE_N4_TO_N2_8A",
+          "thermal_violation": false
+        },
+        "case_B": {
+          "decision": "intervene",
+          "f1_current_t180_a": 40.0,
+          "f2_current_t180_a": 28.0,
+          "n4_temp_t180_c": 52.5348,
+          "pdu_overload": false,
+          "safe": true,
+          "selected_action_id": "MIGRATE_N4_TO_N2_8A",
+          "thermal_violation": false
+        },
+        "cases_safe_count": 1,
+        "description": "SLD-blind heuristic that always migrates 8 A from N4 to N2; overloads F1 (48 A > 44 A) in Case A and succeeds only in Case B.",
+        "is_fair_baseline": true,
+        "privileged_upper_bound": false,
+        "success_rate": 0.5
+      },
+      "no_action": {
+        "baseline_id": "no_action",
+        "case_A": {
+          "decision": "abstain",
+          "f1_current_t180_a": 40.0,
+          "f2_current_t180_a": 28.0,
+          "n4_temp_t180_c": 98.8291,
+          "pdu_overload": false,
+          "safe": false,
+          "selected_action_id": "NO_ACTION",
+          "thermal_violation": true
+        },
+        "case_B": {
+          "decision": "abstain",
+          "f1_current_t180_a": 40.0,
+          "f2_current_t180_a": 28.0,
+          "n4_temp_t180_c": 98.8291,
+          "pdu_overload": false,
+          "safe": false,
+          "selected_action_id": "NO_ACTION",
+          "thermal_violation": true
+        },
+        "cases_safe_count": 0,
+        "description": "No load migration (selected_action_id='NO_ACTION'); N4 exceeds 90.0 C thermal limit in both cases.",
+        "is_fair_baseline": true,
+        "privileged_upper_bound": false,
+        "success_rate": 0.0
+      },
+      "no_sld_variant": {
+        "baseline_id": "no_sld_variant",
+        "case_A": {
+          "auditor_verdict": "abstain",
+          "blocking_graph_uncertainty": true,
+          "decision": "abstain",
+          "n4_temp_t180_c": 98.8291,
+          "pdu_overload": false,
+          "safe": false,
+          "safe_abstention": true,
+          "selected_action_id": "NO_ACTION",
+          "unknown_critical_edges": [
+            "N2",
+            "N3"
+          ]
+        },
+        "case_B": {
+          "auditor_verdict": "abstain",
+          "blocking_graph_uncertainty": true,
+          "decision": "abstain",
+          "n4_temp_t180_c": 98.8291,
+          "pdu_overload": false,
+          "safe": false,
+          "safe_abstention": true,
+          "selected_action_id": "NO_ACTION",
+          "unknown_critical_edges": [
+            "N2",
+            "N3"
+          ]
+        },
+        "cases_safe_count": 0,
+        "description": "Ablation withholding sld.png: unknown_critical_edges=['N2', 'N3'] forces blocking_graph_uncertainty=True and decision='abstain' (NO_ACTION), preventing blind PDU overload.",
+        "is_fair_baseline": true,
+        "privileged_upper_bound": false,
+        "safe_abstention_count": 2,
+        "safe_abstention_rate": 1.0,
+        "success_rate": 0.0
+      },
+      "privileged_oracle": {
+        "baseline_id": "privileged_oracle",
+        "case_A": {
+          "decision": "intervene",
+          "f1_current_t180_a": 40.0,
+          "f2_current_t180_a": 28.0,
+          "n4_temp_t180_c": 52.5348,
+          "pdu_overload": false,
+          "safe": true,
+          "selected_action_id": "MIGRATE_N4_TO_N3_8A",
+          "thermal_violation": false
+        },
+        "case_B": {
+          "decision": "intervene",
+          "f1_current_t180_a": 40.0,
+          "f2_current_t180_a": 28.0,
+          "n4_temp_t180_c": 52.5348,
+          "pdu_overload": false,
+          "safe": true,
+          "selected_action_id": "MIGRATE_N4_TO_N2_8A",
+          "thermal_violation": false
+        },
+        "cases_safe_count": 2,
+        "description": "Privileged upper bound with direct private truth access (not a fair baseline); selects N3 in Case A and N2 in Case B.",
+        "is_fair_baseline": false,
+        "privileged_upper_bound": true,
+        "success_rate": 1.0
+      }
+    },
+    "budget_limits": {
+      "a2_reserve": 20000,
+      "auditor_reserve": 40000,
+      "pair_noncached_cap": 280000,
+      "per_case_noncached_cap": 140000,
+      "per_interaction_noncached_cap": 30000
+    },
+    "campaign_id": "phase5_mock_pair_dossier",
+    "campaign_run_id": "phase5_mock_pair_dossier",
+    "controlled_public_packet_sha256": {
+      "case_A": "c824b1217603da94bf6d7a6b2a96424c1d0be2b0d20a23b890c44a624dbc6ec6",
+      "case_B": "c824b1217603da94bf6d7a6b2a96424c1d0be2b0d20a23b890c44a624dbc6ec6",
+      "substantive_equal": true,
+      "substantive_sha256": "c824b1217603da94bf6d7a6b2a96424c1d0be2b0d20a23b890c44a624dbc6ec6"
+    },
+    "created_at_utc": "2026-10-25T19:39:24Z",
+    "diagnostic_mode": "guided_diagnostic",
+    "fixture_version": "visual-v2-1.0.0",
+    "input_image_sha256": {
+      "case_A": {
+        "rgb": "078444bac2d0a309733e07653c5b145fb3021ed0b95fd825bc7745fc374f7f38",
+        "sld": "0912ed15abc45921ee5e140ab4a5b60a87c67815af255d62ee056d378a1dd489",
+        "thermal": "2c29654fddec6815c5591b661a7c5e2130c073e4c0dee0fa4207b873105b33d2"
+      },
+      "case_B": {
+        "rgb": "078444bac2d0a309733e07653c5b145fb3021ed0b95fd825bc7745fc374f7f38",
+        "sld": "1ca852a6e9f846e56e38c735a5e88eb703fbc14f19d4cdcc3e90291af4143915",
+        "thermal": "2c29654fddec6815c5591b661a7c5e2130c073e4c0dee0fa4207b873105b33d2"
+      },
+      "rgb_identical": true,
+      "sld_distinct": true,
+      "thermal_identical": true
+    },
+    "json_schemas_sha256": {
+      "AuditChallengeV2": "fd28181d29c2272cab3d9086e4b7d1f343f554e250cf1065b754e0d9c8a440d3",
+      "IndependentGraphV2": "cc54c30451a3572845d39975ccb1aab936d9653c410c7f9f48fc3f2879b8e371",
+      "PlanV2": "97b6fee944108d6af8b3509e137c41b03616a4bbfc5e442b89c6112d93801bce",
+      "ProposalV2": "1fd083931c1069acd73cf3c580313c781e4a97a45545ed13baa660bfa7ea1cf0"
+    },
+    "mode": "mock",
+    "opaque_case_ids": [
+      "case-alpha-7f3a",
+      "case-beta-9c2d"
+    ],
+    "oracle_thresholds": {
+      "max_pdu_current_error_a": 1e-06,
+      "max_trajectory_rmse_c": 0.35,
+      "min_bbox_iou": 0.3,
+      "min_canary_diff_c": 0.1
+    },
+    "planned_comparisons": [
+      "no_action",
+      "fixed_n2_policy",
+      "privileged_oracle",
+      "no_sld_variant"
+    ],
+    "private_truth_sha256": {
+      "case_A": "91a78465f150ccbde008759952aad42d963e88537d3a3748f58a8c4e86137070",
+      "case_B": "d1276725039e141a2f5513a7f3e8950342172d3bd21bd0b768c7e5c53ab90aa1"
+    },
+    "protocol_version": "visual-v2/guided_diagnostic",
+    "requested_agent": "antigravity-preview-09-2026",
+    "requested_model": "gemini-4-argon",
+    "role_prompts_sha256": {
+      "A1_prompt_template": "939c2a960bfe6dc8cc8c166d123590bac343b3dfacc1e8588af562e4dd83de0c",
+      "A2_prompt_template": "66a4857282b7818940e5bd56a9724ad492a75740420dfea91f640b531796d547",
+      "I1_prompt_template": "7f276a8d9ad7af8e76b1a96f9bee66f66769e70d63c8c55a5232fd570932bba5",
+      "I2_prompt_template": "cbd4e6727a343ae5ff71f7cc5a6e7922416fbdd8d124d91f0b694f77651d3db1",
+      "auditor_agents_md": "2aab06e4c5ae2d177c8d336960412554d51d2765e4d04e4652aef624dfca1fac",
+      "investigator_agents_md": "066fceb73be7f71767c074e4f57fe0b49cb381a4ae90e2e9b277e6bdc2e49f74"
+    },
+    "schema_version": "visual-v2-precommitment-1.0"
+  },
+  "requested_agent": "antigravity-preview-09-2026",
+  "requested_model": "gemini-4-argon",
+  "returned_model": "gemini-4-argon",
+  "schema_version": "visual-v2-phase5-dossier",
+  "sealed_truth_sha256": {
+    "case_A": "91a78465f150ccbde008759952aad42d963e88537d3a3748f58a8c4e86137070",
+    "case_B": "d1276725039e141a2f5513a7f3e8950342172d3bd21bd0b768c7e5c53ab90aa1"
+  }
+}

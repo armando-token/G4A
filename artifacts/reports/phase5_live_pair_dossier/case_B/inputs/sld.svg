@@ -1,0 +1,79 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="800" viewBox="0 0 1280 800">
+  <rect x="0" y="0" width="1280" height="800" fill="#F8FAFC" />
+  <rect x="24" y="24" width="1232" height="752" fill="none" stroke="#334155" stroke-width="2" />
+  <!-- Title Block -->
+  <rect x="24" y="24" width="1232" height="84" fill="#E2E8F0" stroke="#334155" stroke-width="2" />
+  <text x="48" y="60" font-family="monospace" font-size="18" font-weight="bold" fill="#0F172A">BLACKBOX-DC 480V DISTRIBUTION SINGLE-LINE DIAGRAM (IEC 61082-1)</text>
+  <text x="48" y="88" font-family="monospace" font-size="13" fill="#334155">STATUS: ACTIVE REVISION | AUTHORITATIVE FEEDER SCHEDULE</text>
+  <text x="860" y="60" font-family="monospace" font-size="13" font-weight="bold" fill="#0F172A">REV: ACTIVE REVISION</text>
+  <text x="860" y="88" font-family="monospace" font-size="12" fill="#334155">SHEET 1 OF 1 | SCALE: NTS</text>
+  <!-- Horizontal Feeder Buses -->
+  <text x="100" y="194" font-family="monospace" font-size="14" font-weight="bold" fill="#0F172A">F1 BUS — 44A LIMIT</text>
+  <line id="bus-F1" x1="100" y1="210" x2="1180" y2="210" stroke="#0F172A" stroke-width="4" />
+  <text x="100" y="274" font-family="monospace" font-size="14" font-weight="bold" fill="#0F172A">F2 BUS — 50A LIMIT</text>
+  <line id="bus-F2" x1="100" y1="290" x2="1180" y2="290" stroke="#0F172A" stroke-width="4" />
+  <!-- Column N1 (x=200) -->
+  <circle class="junction-dot" cx="200" cy="210" r="7" fill="#0F172A" />
+  <line x1="200" y1="210" x2="200" y2="278" stroke="#0F172A" stroke-width="3" />
+  <path class="crossing-arch" d="M 200 278 A 12 12 0 0 1 200 302" fill="none" stroke="#0F172A" stroke-width="3" />
+  <line x1="200" y1="302" x2="200" y2="370" stroke="#0F172A" stroke-width="3" />
+  <circle cx="200" cy="370" r="4" fill="#FFFFFF" stroke="#0F172A" stroke-width="2" />
+  <circle cx="200" cy="410" r="4" fill="#FFFFFF" stroke="#0F172A" stroke-width="2" />
+  <line x1="200" y1="410" x2="186" y2="374" stroke="#0F172A" stroke-width="3" />
+  <text x="214" y="394" font-family="monospace" font-size="12" fill="#334155">CB-N1</text>
+  <line x1="200" y1="410" x2="200" y2="520" stroke="#0F172A" stroke-width="3" />
+  <rect x="112" y="520" width="176" height="112" fill="#FFFFFF" stroke="#0F172A" stroke-width="2" />
+  <text x="200" y="562" text-anchor="middle" font-family="monospace" font-size="14" font-weight="bold" fill="#0F172A">RACK N1</text>
+  <text x="200" y="596" text-anchor="middle" font-family="monospace" font-size="12" fill="#334155">N1 (36A / 40A MAX)</text>
+  <line x1="200" y1="632" x2="200" y2="652" stroke="#334155" stroke-width="2" stroke-dasharray="4,3" />
+  <rect x="132" y="652" width="136" height="50" fill="#F1F5F9" stroke="#334155" stroke-width="2" />
+  <text x="200" y="682" text-anchor="middle" font-family="monospace" font-size="13" font-weight="bold" fill="#0F172A">SENSOR: SNS_K1</text>
+  <!-- Column N2 (x=460) -->
+  <circle class="junction-dot" cx="460" cy="290" r="7" fill="#0F172A" />
+  <line x1="460" y1="290" x2="460" y2="370" stroke="#0F172A" stroke-width="3" />
+  <circle cx="460" cy="370" r="4" fill="#FFFFFF" stroke="#0F172A" stroke-width="2" />
+  <circle cx="460" cy="410" r="4" fill="#FFFFFF" stroke="#0F172A" stroke-width="2" />
+  <line x1="460" y1="410" x2="446" y2="374" stroke="#0F172A" stroke-width="3" />
+  <text x="474" y="394" font-family="monospace" font-size="12" fill="#334155">CB-N2</text>
+  <line x1="460" y1="410" x2="460" y2="520" stroke="#0F172A" stroke-width="3" />
+  <rect x="372" y="520" width="176" height="112" fill="#FFFFFF" stroke="#0F172A" stroke-width="2" />
+  <text x="460" y="562" text-anchor="middle" font-family="monospace" font-size="14" font-weight="bold" fill="#0F172A">RACK N2</text>
+  <text x="460" y="596" text-anchor="middle" font-family="monospace" font-size="12" fill="#334155">N2 (4A / 16A MAX)</text>
+  <line x1="460" y1="632" x2="460" y2="652" stroke="#334155" stroke-width="2" stroke-dasharray="4,3" />
+  <rect x="392" y="652" width="136" height="50" fill="#F1F5F9" stroke="#334155" stroke-width="2" />
+  <text x="460" y="682" text-anchor="middle" font-family="monospace" font-size="13" font-weight="bold" fill="#0F172A">SENSOR: SNS_K3</text>
+  <!-- Column N3 (x=720) -->
+  <circle class="junction-dot" cx="720" cy="210" r="7" fill="#0F172A" />
+  <line x1="720" y1="210" x2="720" y2="278" stroke="#0F172A" stroke-width="3" />
+  <path class="crossing-arch" d="M 720 278 A 12 12 0 0 1 720 302" fill="none" stroke="#0F172A" stroke-width="3" />
+  <line x1="720" y1="302" x2="720" y2="370" stroke="#0F172A" stroke-width="3" />
+  <circle cx="720" cy="370" r="4" fill="#FFFFFF" stroke="#0F172A" stroke-width="2" />
+  <circle cx="720" cy="410" r="4" fill="#FFFFFF" stroke="#0F172A" stroke-width="2" />
+  <line x1="720" y1="410" x2="706" y2="374" stroke="#0F172A" stroke-width="3" />
+  <text x="734" y="394" font-family="monospace" font-size="12" fill="#334155">CB-N3</text>
+  <line x1="720" y1="410" x2="720" y2="520" stroke="#0F172A" stroke-width="3" />
+  <rect x="632" y="520" width="176" height="112" fill="#FFFFFF" stroke="#0F172A" stroke-width="2" />
+  <text x="720" y="562" text-anchor="middle" font-family="monospace" font-size="14" font-weight="bold" fill="#0F172A">RACK N3</text>
+  <text x="720" y="596" text-anchor="middle" font-family="monospace" font-size="12" fill="#334155">N3 (4A / 16A MAX)</text>
+  <line x1="720" y1="632" x2="720" y2="652" stroke="#334155" stroke-width="2" stroke-dasharray="4,3" />
+  <rect x="652" y="652" width="136" height="50" fill="#F1F5F9" stroke="#334155" stroke-width="2" />
+  <text x="720" y="682" text-anchor="middle" font-family="monospace" font-size="13" font-weight="bold" fill="#0F172A">SENSOR: SNS_K4</text>
+  <!-- Column N4 (x=980) -->
+  <circle class="junction-dot" cx="980" cy="290" r="7" fill="#0F172A" />
+  <line x1="980" y1="290" x2="980" y2="370" stroke="#0F172A" stroke-width="3" />
+  <circle cx="980" cy="370" r="4" fill="#FFFFFF" stroke="#0F172A" stroke-width="2" />
+  <circle cx="980" cy="410" r="4" fill="#FFFFFF" stroke="#0F172A" stroke-width="2" />
+  <line x1="980" y1="410" x2="966" y2="374" stroke="#0F172A" stroke-width="3" />
+  <text x="994" y="394" font-family="monospace" font-size="12" fill="#334155">CB-N4</text>
+  <line x1="980" y1="410" x2="980" y2="520" stroke="#0F172A" stroke-width="3" />
+  <rect x="892" y="520" width="176" height="112" fill="#FFFFFF" stroke="#0F172A" stroke-width="2" />
+  <text x="980" y="562" text-anchor="middle" font-family="monospace" font-size="14" font-weight="bold" fill="#0F172A">RACK N4</text>
+  <text x="980" y="596" text-anchor="middle" font-family="monospace" font-size="12" fill="#334155">N4 (24A / 32A MAX)</text>
+  <line x1="980" y1="632" x2="980" y2="652" stroke="#334155" stroke-width="2" stroke-dasharray="4,3" />
+  <rect x="912" y="652" width="136" height="50" fill="#F1F5F9" stroke="#334155" stroke-width="2" />
+  <text x="980" y="682" text-anchor="middle" font-family="monospace" font-size="13" font-weight="bold" fill="#0F172A">SENSOR: SNS_K2</text>
+  <!-- Legend & Footer -->
+  <rect x="24" y="728" width="1232" height="48" fill="#E2E8F0" stroke="#334155" stroke-width="2" />
+  <text x="48" y="757" font-family="monospace" font-size="13" font-weight="bold" fill="#0F172A">LEGEND: FILLED DOT = BUS CONNECTION | BRIDGE ARCH = NON-CONNECTED CROSSING</text>
+  <text x="760" y="757" font-family="monospace" font-size="13" font-weight="bold" fill="#334155">TRAINING / SIMULATION — NOT FOR CONSTRUCTION</text>
+</svg>

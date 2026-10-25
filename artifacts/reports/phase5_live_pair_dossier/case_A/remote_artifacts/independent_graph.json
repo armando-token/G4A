@@ -1,0 +1,71 @@
+{
+  "case_id": "A",
+  "edges": [
+    {
+      "evidence_ref": "sld:branch",
+      "pdu": "F1",
+      "rack": "N1"
+    },
+    {
+      "evidence_ref": "sld:branch",
+      "pdu": "F1",
+      "rack": "N2"
+    },
+    {
+      "evidence_ref": "sld:branch",
+      "pdu": "F2",
+      "rack": "N3"
+    },
+    {
+      "evidence_ref": "sld:branch",
+      "pdu": "F2",
+      "rack": "N4"
+    }
+  ],
+  "hotspot": {
+    "asset_id": "N4",
+    "bbox_xyxy_px": [
+      1078,
+      324,
+      1143,
+      393
+    ],
+    "confidence": 0.95,
+    "evidence_refs": [
+      "thermal:visible-hotspot",
+      "rgb:connector"
+    ],
+    "surface": "rear_visible_connector"
+  },
+  "input_png_sha256": {
+    "rgb": "078444bac2d0a309733e07653c5b145fb3021ed0b95fd825bc7745fc374f7f38",
+    "sld": "0912ed15abc45921ee5e140ab4a5b60a87c67815af255d62ee056d378a1dd489",
+    "thermal": "2c29654fddec6815c5591b661a7c5e2130c073e4c0dee0fa4207b873105b33d2"
+  },
+  "notes": "Independent visual extraction from active SLD and rear-aisle captures; obsolete maintenance note rejected.",
+  "role": "auditor_visual",
+  "schema_version": "visual-v2",
+  "sensor_edges": [
+    {
+      "evidence_ref": "sld:sensor",
+      "rack_id": "N1",
+      "sensor_id": "SNS_K1"
+    },
+    {
+      "evidence_ref": "sld:sensor",
+      "rack_id": "N4",
+      "sensor_id": "SNS_K2"
+    },
+    {
+      "evidence_ref": "sld:sensor",
+      "rack_id": "N2",
+      "sensor_id": "SNS_K3"
+    },
+    {
+      "evidence_ref": "sld:sensor",
+      "rack_id": "N3",
+      "sensor_id": "SNS_K4"
+    }
+  ],
+  "unknown_critical_edges": []
+}

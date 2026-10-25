@@ -1,0 +1,36 @@
+{
+  "case_id": "case_A",
+  "files": {
+    "inputs/public_packet.json": {
+      "sha256": "463dac8f803ca01939558398f84c5e6cdaad8fa5ae2583b926a220355b4fd830",
+      "size_bytes": 9280,
+      "substantive_sha256": "c824b1217603da94bf6d7a6b2a96424c1d0be2b0d20a23b890c44a624dbc6ec6"
+    },
+    "inputs/rear_aisle_rgb.png": {
+      "height": 800,
+      "sha256": "078444bac2d0a309733e07653c5b145fb3021ed0b95fd825bc7745fc374f7f38",
+      "size_bytes": 4305,
+      "width": 1280
+    },
+    "inputs/rear_aisle_thermal.png": {
+      "height": 800,
+      "sha256": "2c29654fddec6815c5591b661a7c5e2130c073e4c0dee0fa4207b873105b33d2",
+      "size_bytes": 4412,
+      "width": 1280
+    },
+    "inputs/sld.png": {
+      "height": 800,
+      "sha256": "0912ed15abc45921ee5e140ab4a5b60a87c67815af255d62ee056d378a1dd489",
+      "size_bytes": 31611,
+      "width": 1280
+    }
+  },
+  "input_png_sha256": {
+    "rgb": "078444bac2d0a309733e07653c5b145fb3021ed0b95fd825bc7745fc374f7f38",
+    "sld": "0912ed15abc45921ee5e140ab4a5b60a87c67815af255d62ee056d378a1dd489",
+    "thermal": "2c29654fddec6815c5591b661a7c5e2130c073e4c0dee0fa4207b873105b33d2"
+  },
+  "public_packet_sha256": "463dac8f803ca01939558398f84c5e6cdaad8fa5ae2583b926a220355b4fd830",
+  "short_case_id": "A",
+  "substantive_public_packet_sha256": "c824b1217603da94bf6d7a6b2a96424c1d0be2b0d20a23b890c44a624dbc6ec6"
+}

@@ -1,0 +1,62 @@
+{
+  "canonical_sha256": "0eaddc8d90b7f1f4a764d57c25ebc62712fc9e587bf3c167b914dd21841f835e",
+  "case_id": "case_A",
+  "diagnostic_only": false,
+  "elapsed_s": 64.0797,
+  "environment_id": "3cf5af50a09cbe0dc9b6680e1544627f",
+  "error": null,
+  "expected_filename": "plan.json",
+  "has_code_execution_step": true,
+  "interaction_id": "v1_ChdDRjNlYXVIUUxvZS15dE1Qb2JtZXNRMBIXQ0YzZWF1SFFMb2UteXRNUG9ibWVzUTA",
+  "lock_chain_hash": "39a6ecb7c69c4faf193d4f69d4d0a5d33be6a5fed0ce99a1f5b9dbbc110271b3",
+  "lock_stage": "L2_I2_PLAN",
+  "poll_count": 36,
+  "requested_agent": "antigravity-preview-09-2026",
+  "requested_model": "gemini-4-argon",
+  "retrieved_path": "plan.json",
+  "retrieved_sha256": "eb2a2d1c554c6e941522adba011c347586d17383550cab9bd6c0102cd09e123b",
+  "returned_model": "gemini-4-argon",
+  "role": "investigator_plan",
+  "run_id": "run-9df62b7ae2fd",
+  "scientific_complete": true,
+  "status": "completed",
+  "turn_id": "I2",
+  "usage": {
+    "billed_noncached_tokens": 16063,
+    "cached_inclusive_tokens": 25332,
+    "cached_tokens": 9269,
+    "input_tokens": 0,
+    "noncached_tokens": 16063,
+    "output_tokens": 0,
+    "raw_usage": {
+      "cached_tokens_by_modality": [
+        {
+          "modality": "text",
+          "tokens": 9269
+        }
+      ],
+      "input_tokens_by_modality": [
+        {
+          "modality": "text",
+          "tokens": 21856
+        }
+      ],
+      "output_tokens_by_modality": [
+        {
+          "modality": "text",
+          "tokens": 3259
+        }
+      ],
+      "total_cached_tokens": 9269,
+      "total_input_tokens": 21856,
+      "total_output_tokens": 3259,
+      "total_thought_tokens": 217,
+      "total_tokens": 25332,
+      "total_tool_use_tokens": 0
+    },
+    "thoughts_tokens": 0,
+    "tool_use_tokens": 0,
+    "total_tokens": 25332,
+    "unknown_usage": false
+  }
+}

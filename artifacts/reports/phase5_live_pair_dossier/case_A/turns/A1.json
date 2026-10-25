@@ -1,0 +1,70 @@
+{
+  "canonical_sha256": "c4a3a5fcbd16574b23d6b2e9f8f517eb4ae2f5a65513fb92bcfe095bbf9ca5cd",
+  "case_id": "case_A",
+  "diagnostic_only": false,
+  "elapsed_s": 23.0656,
+  "environment_id": "3c05e3607ce48e5684a09c42d797c586",
+  "error": null,
+  "expected_filename": "independent_graph.json",
+  "has_code_execution_step": true,
+  "interaction_id": "v1_ChdTbDNlYXZUV0hLYUF5dE1QNTkyLW9BURIXU2wzZWF2VFdIS2FBeXRNUDU5Mi1vQVE",
+  "lock_chain_hash": "95744c42018914556b02f69210e8e4574a8ac56543f5fd2720c8a27dbdd5eecb",
+  "lock_stage": "L3_A1_GRAPH",
+  "poll_count": 9,
+  "requested_agent": "antigravity-preview-09-2026",
+  "requested_model": "gemini-4-argon",
+  "retrieved_path": "independent_graph.json",
+  "retrieved_sha256": "7769b769c8f03f7c01b4e8fa4777a675c06667d793afb90803f43e54d1b100bf",
+  "returned_model": "gemini-4-argon",
+  "role": "auditor_visual",
+  "run_id": "run-36c94248121b",
+  "scientific_complete": true,
+  "status": "completed",
+  "turn_id": "A1",
+  "usage": {
+    "billed_noncached_tokens": 15009,
+    "cached_inclusive_tokens": 23840,
+    "cached_tokens": 8831,
+    "input_tokens": 0,
+    "noncached_tokens": 15009,
+    "output_tokens": 0,
+    "raw_usage": {
+      "cached_tokens_by_modality": [
+        {
+          "modality": "text",
+          "tokens": 6396
+        },
+        {
+          "modality": "image",
+          "tokens": 2435
+        }
+      ],
+      "input_tokens_by_modality": [
+        {
+          "modality": "text",
+          "tokens": 16347
+        },
+        {
+          "modality": "image",
+          "tokens": 6552
+        }
+      ],
+      "output_tokens_by_modality": [
+        {
+          "modality": "text",
+          "tokens": 941
+        }
+      ],
+      "total_cached_tokens": 8831,
+      "total_input_tokens": 22899,
+      "total_output_tokens": 941,
+      "total_thought_tokens": 0,
+      "total_tokens": 23840,
+      "total_tool_use_tokens": 0
+    },
+    "thoughts_tokens": 0,
+    "tool_use_tokens": 0,
+    "total_tokens": 23840,
+    "unknown_usage": false
+  }
+}

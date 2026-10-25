@@ -1,0 +1,12 @@
+{
+  "case_id": "B",
+  "exact_value": 1.2094091596115595,
+  "i1_proposal_hash": "703630d5246b7cf9c8b0eee0ad30ee8f93744645b4f1afe7561b5a002e624ec8",
+  "kind": "voltage_drop",
+  "receipt_id": "RCPT-B-001",
+  "receipt_sha256": "d8782f98bae05dfb86886e9235f735acb8f6394fc4fc4bbd50e4ca7d2b51ef17",
+  "target": "N4",
+  "timestamp_s": 0,
+  "units": "V",
+  "value": 1.209409
+}

@@ -1,0 +1,506 @@
+{
+  "allowed_receivers": [
+    "N2",
+    "N3"
+  ],
+  "alpha_per_C": 0.004,
+  "ambient_C": 24.0,
+  "component_limits": {
+    "allowed_receivers": [
+      "N2",
+      "N3"
+    ],
+    "max_temp_C": 90.0,
+    "migration_quantum_A": 8.0,
+    "pdu_limits_A": {
+      "F1": 44.0,
+      "F2": 50.0
+    },
+    "rack_limits_A": {
+      "N1": 40.0,
+      "N2": 16.0,
+      "N3": 16.0,
+      "N4": 32.0
+    }
+  },
+  "diagnostic_menu": [
+    "voltage_drop",
+    "temperature_snapshot",
+    "controller_setting"
+  ],
+  "diagnostic_mode": "guided_diagnostic",
+  "horizon_s": 180,
+  "maintenance_records": [
+    {
+      "authoritative_source": "sld.png",
+      "record_id": "MNT-2026-0814",
+      "status": "[OBSOLETE - SUPERSEDED BY ACTIVE SLD]",
+      "summary": "[OBSOLETE - SUPERSEDED BY ACTIVE SLD] Historical maintenance log noted rack N3 landed on PDU feeder F1 prior to busway re-termination. Do NOT rely on this obsolete text note for feeder topology; the active single-line diagram image ('sld.png') is the sole authoritative source for current feeder-to-rack assignments."
+    },
+    {
+      "authoritative_source": "sld.png",
+      "record_id": "OPS-2026-1025",
+      "status": "ACTIVE",
+      "summary": "Rear connector overheating observed during step-load ramp. Exactly 8.0 A must be migrated from the overheated source rack to an eligible receiver rack ('N2' or 'N3') without exceeding PDU feeder or rack current/temperature limits over the 180 s horizon."
+    }
+  ],
+  "max_temp_C": 90.0,
+  "migration_quantum_A": 8.0,
+  "pdu_limits_A": {
+    "F1": 44.0,
+    "F2": 50.0
+  },
+  "rack_limits_A": {
+    "N1": 40.0,
+    "N2": 16.0,
+    "N3": 16.0,
+    "N4": 32.0
+  },
+  "schema_version": "1.0.0",
+  "step_s": 10,
+  "task_prompt": "GUIDED DIAGNOSTIC MODE: Inspect the rear-aisle RGB and thermal captures to bind anonymous sensor traces (SNS_K1..SNS_K4) to physical racks (N1..N4). Request a single 'voltage_drop' diagnostic probe on the overheated source rack to disambiguate connector resistance, fit thermal parameters from its ramp, consult the authoritative active SLD drawing ('sld.png') for feeder routing, and recommend migrating 8.0 A to the safe receiver rack ('N2' or 'N3').",
+  "telemetry": {
+    "SNS_K1": {
+      "current_t0_A": 36.0,
+      "currents_A": [
+        36.0,
+        36.0,
+        36.0,
+        36.0,
+        36.0,
+        36.0,
+        36.0,
+        36.0,
+        36.0,
+        36.0,
+        36.0,
+        36.0,
+        36.0
+      ],
+      "sensor_id": "SNS_K1",
+      "t_s": [
+        -120,
+        -110,
+        -100,
+        -90,
+        -80,
+        -70,
+        -60,
+        -50,
+        -40,
+        -30,
+        -20,
+        -10,
+        0
+      ],
+      "temp_t0_C": 36.0,
+      "temps_C": [
+        36.0,
+        36.0,
+        36.0,
+        36.0,
+        36.0,
+        36.0,
+        36.0,
+        36.0,
+        36.0,
+        36.0,
+        36.0,
+        36.0,
+        36.0
+      ]
+    },
+    "SNS_K2": {
+      "current_t0_A": 24.0,
+      "currents_A": [
+        12.0,
+        12.0,
+        12.0,
+        12.0,
+        18.0,
+        18.0,
+        18.0,
+        18.0,
+        24.0,
+        24.0,
+        24.0,
+        24.0,
+        24.0
+      ],
+      "sensor_id": "SNS_K2",
+      "t_s": [
+        -120,
+        -110,
+        -100,
+        -90,
+        -80,
+        -70,
+        -60,
+        -50,
+        -40,
+        -30,
+        -20,
+        -10,
+        0
+      ],
+      "temp_t0_C": 88.95030198217694,
+      "temps_C": [
+        34.0,
+        35.957903437269934,
+        37.1898054992223,
+        37.96491149339665,
+        38.45260391697523,
+        46.251344699751684,
+        51.37920616631382,
+        54.75089961691873,
+        56.96786994635972,
+        69.64857123570255,
+        78.48937859047552,
+        84.65306566903602,
+        88.95030198217694
+      ]
+    },
+    "SNS_K3": {
+      "current_t0_A": 4.0,
+      "currents_A": [
+        4.0,
+        4.0,
+        4.0,
+        4.0,
+        4.0,
+        4.0,
+        4.0,
+        4.0,
+        4.0,
+        4.0,
+        4.0,
+        4.0,
+        4.0
+      ],
+      "sensor_id": "SNS_K3",
+      "t_s": [
+        -120,
+        -110,
+        -100,
+        -90,
+        -80,
+        -70,
+        -60,
+        -50,
+        -40,
+        -30,
+        -20,
+        -10,
+        0
+      ],
+      "temp_t0_C": 25.0,
+      "temps_C": [
+        25.0,
+        25.0,
+        25.0,
+        25.0,
+        25.0,
+        25.0,
+        25.0,
+        25.0,
+        25.0,
+        25.0,
+        25.0,
+        25.0,
+        25.0
+      ]
+    },
+    "SNS_K4": {
+      "current_t0_A": 4.0,
+      "currents_A": [
+        4.0,
+        4.0,
+        4.0,
+        4.0,
+        4.0,
+        4.0,
+        4.0,
+        4.0,
+        4.0,
+        4.0,
+        4.0,
+        4.0,
+        4.0
+      ],
+      "sensor_id": "SNS_K4",
+      "t_s": [
+        -120,
+        -110,
+        -100,
+        -90,
+        -80,
+        -70,
+        -60,
+        -50,
+        -40,
+        -30,
+        -20,
+        -10,
+        0
+      ],
+      "temp_t0_C": 25.0,
+      "temps_C": [
+        25.0,
+        25.0,
+        25.0,
+        25.0,
+        25.0,
+        25.0,
+        25.0,
+        25.0,
+        25.0,
+        25.0,
+        25.0,
+        25.0,
+        25.0
+      ]
+    },
+    "sensors": {
+      "SNS_K1": {
+        "current_t0_A": 36.0,
+        "currents_A": [
+          36.0,
+          36.0,
+          36.0,
+          36.0,
+          36.0,
+          36.0,
+          36.0,
+          36.0,
+          36.0,
+          36.0,
+          36.0,
+          36.0,
+          36.0
+        ],
+        "sensor_id": "SNS_K1",
+        "t_s": [
+          -120,
+          -110,
+          -100,
+          -90,
+          -80,
+          -70,
+          -60,
+          -50,
+          -40,
+          -30,
+          -20,
+          -10,
+          0
+        ],
+        "temp_t0_C": 36.0,
+        "temps_C": [
+          36.0,
+          36.0,
+          36.0,
+          36.0,
+          36.0,
+          36.0,
+          36.0,
+          36.0,
+          36.0,
+          36.0,
+          36.0,
+          36.0,
+          36.0
+        ]
+      },
+      "SNS_K2": {
+        "current_t0_A": 24.0,
+        "currents_A": [
+          12.0,
+          12.0,
+          12.0,
+          12.0,
+          18.0,
+          18.0,
+          18.0,
+          18.0,
+          24.0,
+          24.0,
+          24.0,
+          24.0,
+          24.0
+        ],
+        "sensor_id": "SNS_K2",
+        "t_s": [
+          -120,
+          -110,
+          -100,
+          -90,
+          -80,
+          -70,
+          -60,
+          -50,
+          -40,
+          -30,
+          -20,
+          -10,
+          0
+        ],
+        "temp_t0_C": 88.95030198217694,
+        "temps_C": [
+          34.0,
+          35.957903437269934,
+          37.1898054992223,
+          37.96491149339665,
+          38.45260391697523,
+          46.251344699751684,
+          51.37920616631382,
+          54.75089961691873,
+          56.96786994635972,
+          69.64857123570255,
+          78.48937859047552,
+          84.65306566903602,
+          88.95030198217694
+        ]
+      },
+      "SNS_K3": {
+        "current_t0_A": 4.0,
+        "currents_A": [
+          4.0,
+          4.0,
+          4.0,
+          4.0,
+          4.0,
+          4.0,
+          4.0,
+          4.0,
+          4.0,
+          4.0,
+          4.0,
+          4.0,
+          4.0
+        ],
+        "sensor_id": "SNS_K3",
+        "t_s": [
+          -120,
+          -110,
+          -100,
+          -90,
+          -80,
+          -70,
+          -60,
+          -50,
+          -40,
+          -30,
+          -20,
+          -10,
+          0
+        ],
+        "temp_t0_C": 25.0,
+        "temps_C": [
+          25.0,
+          25.0,
+          25.0,
+          25.0,
+          25.0,
+          25.0,
+          25.0,
+          25.0,
+          25.0,
+          25.0,
+          25.0,
+          25.0,
+          25.0
+        ]
+      },
+      "SNS_K4": {
+        "current_t0_A": 4.0,
+        "currents_A": [
+          4.0,
+          4.0,
+          4.0,
+          4.0,
+          4.0,
+          4.0,
+          4.0,
+          4.0,
+          4.0,
+          4.0,
+          4.0,
+          4.0,
+          4.0
+        ],
+        "sensor_id": "SNS_K4",
+        "t_s": [
+          -120,
+          -110,
+          -100,
+          -90,
+          -80,
+          -70,
+          -60,
+          -50,
+          -40,
+          -30,
+          -20,
+          -10,
+          0
+        ],
+        "temp_t0_C": 25.0,
+        "temps_C": [
+          25.0,
+          25.0,
+          25.0,
+          25.0,
+          25.0,
+          25.0,
+          25.0,
+          25.0,
+          25.0,
+          25.0,
+          25.0,
+          25.0,
+          25.0
+        ]
+      }
+    },
+    "t_s": [
+      -120,
+      -110,
+      -100,
+      -90,
+      -80,
+      -70,
+      -60,
+      -50,
+      -40,
+      -30,
+      -20,
+      -10,
+      0
+    ],
+    "times_s": [
+      -120,
+      -110,
+      -100,
+      -90,
+      -80,
+      -70,
+      -60,
+      -50,
+      -40,
+      -30,
+      -20,
+      -10,
+      0
+    ]
+  },
+  "visual_assets": {
+    "rgb_capture": "rear_aisle_rgb.png",
+    "sld_drawing": "sld.png",
+    "thermal_capture": "rear_aisle_thermal.png"
+  },
+  "visual_references": {
+    "rgb_capture": "rear_aisle_rgb.png",
+    "sld_drawing": "sld.png",
+    "thermal_capture": "rear_aisle_thermal.png"
+  }
+}

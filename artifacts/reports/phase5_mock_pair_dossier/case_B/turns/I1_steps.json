@@ -1,0 +1,13 @@
+[
+  {
+    "artifact_canonical_sha256": "703630d5246b7cf9c8b0eee0ad30ee8f93744645b4f1afe7561b5a002e624ec8",
+    "artifact_written": "proposal.json",
+    "environment_id": "env-investigator-003",
+    "interaction_id": "inter-v2-0005",
+    "name": "python",
+    "status": "completed",
+    "step_index": 0,
+    "turn_id": "I1",
+    "type": "code_execution"
+  }
+]
