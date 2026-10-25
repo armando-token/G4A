@@ -53,3 +53,7 @@ python -m blackbox.preflight --json
 ```bash
 pytest tests/test_preflight.py
 ```
+
+## License
+
+This project is licensed under the [MIT License](LICENSE).
