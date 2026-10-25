@@ -2,36 +2,73 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>BlackboxDC 3D Rear-Aisle Scene</title>
+  <meta name="viewport" content="width=1280, initial-scale=1.0" />
+  <title>BlackboxDC Rear-Aisle 3D Inspection Scene</title>
   <style>
+    * {
+      box-sizing: border-box;
+      user-select: none;
+    }
     html, body {
       margin: 0;
       padding: 0;
-      width: 100%;
-      height: 100%;
+      width: 1280px;
+      height: 800px;
       overflow: hidden;
-      background-color: #06090e;
-      font-family: monospace;
+      background-color: #070a10;
+      font-family: "DejaVu Sans Mono", "Liberation Mono", monospace;
+    }
+    #scene-container {
+      position: relative;
+      width: 1280px;
+      height: 800px;
+      overflow: hidden;
     }
     #viewport {
       display: block;
-      width: 100vw;
-      height: 100vh;
+      width: 1280px;
+      height: 800px;
     }
-    #hud {
+    #thermal-legend {
       position: absolute;
-      top: 12px;
-      left: 16px;
-      color: #8ce4ff;
-      font-size: 13px;
-      line-height: 1.4;
-      background: rgba(6, 9, 14, 0.78);
-      border: 1px solid rgba(140, 228, 255, 0.35);
-      padding: 6px 10px;
+      top: 18px;
+      left: 18px;
+      width: 248px;
+      padding: 10px 12px;
+      background: rgba(10, 14, 22, 0.88);
+      border: 1px solid rgba(110, 135, 165, 0.55);
+      border-radius: 4px;
+      color: rgb(195, 205, 218);
+      font-size: 11px;
+      line-height: 1.35;
       pointer-events: none;
-      text-transform: uppercase;
+      display: none;
+    }
+    #thermal-legend .legend-title {
+      font-weight: 700;
       letter-spacing: 0.04em;
+      margin-bottom: 6px;
+      color: rgb(205, 214, 224);
+    }
+    #thermal-legend .colorbar {
+      height: 12px;
+      width: 100%;
+      border: 1px solid rgba(90, 110, 135, 0.7);
+      background: linear-gradient(
+        90deg,
+        rgb(16, 12, 52) 0%,
+        rgb(28, 52, 135) 25%,
+        rgb(128, 32, 115) 50%,
+        rgb(192, 78, 32) 75%,
+        rgb(214, 178, 65) 100%
+      );
+      margin-bottom: 5px;
+    }
+    #thermal-legend .legend-ticks {
+      display: flex;
+      justify-content: space-between;
+      font-size: 10px;
+      color: rgb(180, 192, 205);
     }
   </style>
   <script type="importmap">
@@ -43,8 +80,20 @@
   </script>
 </head>
 <body>
-  <canvas id="viewport"></canvas>
-  <div id="hud">BLACKBOX-DC // REAR-AISLE //INITIALIZING</div>
+  <div id="scene-container">
+    <canvas id="viewport" width="1280" height="800"></canvas>
+    <div id="thermal-legend">
+      <div class="legend-title">SYNTHETIC TEMPERATURE: 20°C — 100°C</div>
+      <div class="colorbar"></div>
+      <div class="legend-ticks">
+        <span>20°C</span>
+        <span>40°C</span>
+        <span>60°C</span>
+        <span>80°C</span>
+        <span>100°C</span>
+      </div>
+    </div>
+  </div>
   <script type="module" src="./scene.js"></script>
 </body>
 </html>

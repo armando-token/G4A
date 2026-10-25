@@ -1,7 +1,34 @@
 import * as THREE from 'three';
 
+export const VIEWPORT_WIDTH = 1280;
+export const VIEWPORT_HEIGHT = 800;
+
+export const RACK_SPECS = [
+  { id: 'N1', centerX: 0.00, baseTempC: 31.5 },
+  { id: 'N2', centerX: 0.82, baseTempC: 28.0 },
+  { id: 'N3', centerX: 1.64, baseTempC: 29.0 },
+  { id: 'N4', centerX: 2.46, baseTempC: 34.0 }
+];
+
+export const FAULT_CONNECTOR_SPEC = {
+  rackId: 'N4',
+  center: [2.57, 1.20, 0.555],
+  size: [0.15, 0.19, 0.06],
+  peakTempC: 88.95030198217694,
+  sigmaM: 0.062
+};
+
+export const REFERENCE_CAMERA_SPEC = {
+  position: [1.23, 1.24, 3.45],
+  lookAt: [1.23, 1.08, 0.50],
+  fov: 43,
+  aspect: VIEWPORT_WIDTH / VIEWPORT_HEIGHT,
+  near: 0.1,
+  far: 25.0
+};
+
 /**
- * Deterministic PRNG (Mulberry32) so procedural details are 100% reproducible.
+ * Deterministic Mulberry32 PRNG.
  */
 function mulberry32(seed) {
   let a = seed >>> 0;
@@ -15,304 +42,513 @@ function mulberry32(seed) {
 }
 
 /**
- * Maps normalized temperature [0..1] to false-color ironbow thermal RGB.
+ * Create a deterministic perforated rear-door mesh canvas texture.
  */
-function thermalColor(t) {
-  const x = Math.max(0, Math.min(1, t));
-  let r = 0, g = 0, b = 0;
-  if (x < 0.25) {
-    const u = x / 0.25;
-    r = 0.08 * u;
-    g = 0.02 * u;
-    b = 0.15 + 0.55 * u;
-  } else if (x < 0.55) {
-    const u = (x - 0.25) / 0.30;
-    r = 0.08 + 0.72 * u;
-    g = 0.02 + 0.10 * u;
-    b = 0.70 - 0.25 * u;
-  } else if (x < 0.82) {
-    const u = (x - 0.55) / 0.27;
-    r = 0.80 + 0.18 * u;
-    g = 0.12 + 0.62 * u;
-    b = 0.45 - 0.40 * u;
-  } else {
-    const u = (x - 0.82) / 0.18;
-    r = 0.98 + 0.02 * u;
-    g = 0.74 + 0.26 * u;
-    b = 0.05 + 0.90 * u;
+function createPerforatedDoorTexture() {
+  const c = document.createElement('canvas');
+  c.width = 256;
+  c.height = 512;
+  const ctx = c.getContext('2d');
+
+  ctx.fillStyle = '#1b222c';
+  ctx.fillRect(0, 0, c.width, c.height);
+
+  // Border stiles
+  ctx.strokeStyle = '#2c3746';
+  ctx.lineWidth = 14;
+  ctx.strokeRect(7, 7, c.width - 14, c.height - 14);
+
+  // Hex/grid perforation pattern
+  ctx.fillStyle = '#0b0f15';
+  for (let y = 22; y < c.height - 22; y += 8) {
+    const offset = ((y / 8) % 2) * 4;
+    for (let x = 20 + offset; x < c.width - 20; x += 8) {
+      ctx.fillRect(x, y, 4, 4);
+    }
   }
-  return new THREE.Color(r, g, b);
+
+  const tex = new THREE.CanvasTexture(c);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.needsUpdate = true;
+  return tex;
 }
 
-export const CAMERA_POSES = {
-  aisle_overview: {
-    position: [0.0, 1.65, 3.6],
-    target: [0.0, 1.25, -1.8],
-    fov: 52
-  },
-  pdu_n2_closeup: {
-    position: [-0.62, 1.45, 0.95],
-    target: [-1.18, 1.35, -0.45],
-    fov: 40
-  },
-  pdu_n3_closeup: {
-    position: [0.62, 1.45, 0.95],
-    target: [1.18, 1.35, -0.45],
-    fov: 40
-  },
-  cable_tray_overhead: {
-    position: [0.0, 2.38, 1.95],
-    target: [0.0, 2.15, -1.6],
-    fov: 48
-  }
-};
+/**
+ * Create a high-contrast rack identifier placard texture ("N1".."N4").
+ */
+function createRackLabelTexture(rackId) {
+  const c = document.createElement('canvas');
+  c.width = 256;
+  c.height = 96;
+  const ctx = c.getContext('2d');
 
-export function parseSceneParams(searchString = window.location.search) {
-  const params = new URLSearchParams(searchString);
-  const mode = params.get('mode') === 'thermal' ? 'thermal' : 'rgb';
-  const poseKey = params.get('pose') || 'aisle_overview';
-  const width = parseInt(params.get('width') || '1280', 10);
-  const height = parseInt(params.get('height') || '720', 10);
-  const n2TempC = parseFloat(params.get('n2TempC') || '48.5');
-  const n3TempC = parseFloat(params.get('n3TempC') || '84.2');
-  return { mode, poseKey, width, height, n2TempC, n3TempC };
+  ctx.fillStyle = '#0f1722';
+  ctx.fillRect(0, 0, c.width, c.height);
+
+  ctx.strokeStyle = '#58a6ff';
+  ctx.lineWidth = 6;
+  ctx.strokeRect(4, 4, c.width - 8, c.height - 8);
+
+  ctx.fillStyle = '#f0f6fc';
+  ctx.font = 'bold 58px monospace';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(rackId, c.width / 2, c.height / 2 + 2);
+
+  const tex = new THREE.CanvasTexture(c);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.needsUpdate = true;
+  return tex;
 }
 
-function makeMaterial({ mode, rgbHex, roughness = 0.55, metalness = 0.45, emissiveHex = 0x000000, tempNorm = 0.2 }) {
-  if (mode === 'thermal') {
-    const c = thermalColor(tempNorm);
-    return new THREE.MeshBasicMaterial({ color: c });
-  }
-  return new THREE.MeshStandardMaterial({
-    color: rgbHex,
-    roughness,
-    metalness,
-    emissive: emissiveHex,
-    emissiveIntensity: emissiveHex ? 0.65 : 0.0
-  });
-}
+/**
+ * Create the custom ShaderMaterial used across all scene meshes in thermal mode.
+ * Computes 3D distance to the N4 fault connector at [2.57, 1.2, 0.555] with
+ * Gaussian sigma = 0.062 m and peak temperature 88.95030198217694 C on a
+ * monotonic 20C - 100C false-color scale.
+ */
+function createThermalShaderMaterial({ baseTempC = 28.0, isConnector = false } = {}) {
+  return new THREE.ShaderMaterial({
+    uniforms: {
+      uHotspotCenter: { value: new THREE.Vector3(...FAULT_CONNECTOR_SPEC.center) },
+      uPeakTempC: { value: FAULT_CONNECTOR_SPEC.peakTempC },
+      uSigmaM: { value: FAULT_CONNECTOR_SPEC.sigmaM },
+      uBaseTempC: { value: baseTempC },
+      uMinTempC: { value: 20.0 },
+      uMaxTempC: { value: 100.0 },
+      uIsConnector: { value: isConnector ? 1.0 : 0.0 }
+    },
+    vertexShader: /* glsl */ `
+      varying vec3 vWorldPos;
+      varying vec3 vWorldNormal;
+      void main() {
+        vec4 worldPosition = modelMatrix * vec4(position, 1.0);
+        vWorldPos = worldPosition.xyz;
+        vWorldNormal = normalize(mat3(modelMatrix) * normal);
+        gl_Position = projectionMatrix * viewMatrix * worldPosition;
+      }
+    `,
+    fragmentShader: /* glsl */ `
+      uniform vec3 uHotspotCenter;
+      uniform float uPeakTempC;
+      uniform float uSigmaM;
+      uniform float uBaseTempC;
+      uniform float uMinTempC;
+      uniform float uMaxTempC;
+      uniform float uIsConnector;
 
-export function buildDataCenterScene(config) {
-  const { mode, n2TempC, n3TempC } = config;
-  const rand = mulberry32(0x424c4b42); // deterministic seed "BLKB"
-  const scene = new THREE.Scene();
+      varying vec3 vWorldPos;
+      varying vec3 vWorldNormal;
 
-  scene.background = new THREE.Color(mode === 'thermal' ? 0x05020f : 0x080c12);
-  if (mode === 'rgb') {
-    scene.fog = new THREE.FogExp2(0x080c12, 0.09);
-  }
-
-  // Lighting for RGB mode
-  if (mode === 'rgb') {
-    const ambient = new THREE.AmbientLight(0x9bb8d3, 0.65);
-    scene.add(ambient);
-
-    const keyLight = new THREE.DirectionalLight(0xeef6ff, 1.35);
-    keyLight.position.set(1.5, 4.2, 3.0);
-    scene.add(keyLight);
-
-    const aisleStrip1 = new THREE.PointLight(0x7fd4ff, 1.4, 8.0);
-    aisleStrip1.position.set(0, 2.55, 1.0);
-    scene.add(aisleStrip1);
-
-    const aisleStrip2 = new THREE.PointLight(0xff6b4a, 0.9, 6.0);
-    aisleStrip2.position.set(1.1, 1.5, -0.5);
-    scene.add(aisleStrip2);
-  }
-
-  // Raised Floor
-  const floorGeo = new THREE.PlaneGeometry(6.0, 10.0, 12, 20);
-  const floorMat = makeMaterial({
-    mode,
-    rgbHex: 0x161d26,
-    roughness: 0.7,
-    metalness: 0.25,
-    tempNorm: 0.14
-  });
-  const floor = new THREE.Mesh(floorGeo, floorMat);
-  floor.rotation.x = -Math.PI / 2;
-  scene.add(floor);
-
-  // Floor Grid Lines
-  const gridHelper = new THREE.GridHelper(
-    10.0,
-    20,
-    mode === 'thermal' ? 0x261844 : 0x2a394a,
-    mode === 'thermal' ? 0x191030 : 0x1d2836
-  );
-  gridHelper.position.y = 0.002;
-  scene.add(gridHelper);
-
-  const normTemp = (degC) => Math.max(0.05, Math.min(0.99, (degC - 22.0) / (95.0 - 22.0)));
-  const n2Norm = normTemp(n2TempC);
-  const n3Norm = normTemp(n3TempC);
-
-  // Build two opposing rows of 42U Racks along the rear hot aisle (left = Feed N2 side, right = Feed N3 side)
-  const rackDepth = 1.05;
-  const rackWidth = 0.62;
-  const rackHeight = 2.1;
-  const rackZPositions = [-2.4, -1.2, 0.0, 1.2];
-
-  rackZPositions.forEach((zPos, idx) => {
-    [-1, 1].forEach((side) => {
-      const rackGroup = new THREE.Group();
-      const xCenter = side * 1.45;
-      rackGroup.position.set(xCenter, 0, zPos);
-
-      // Rack outer frame
-      const frameGeo = new THREE.BoxGeometry(rackDepth, rackHeight, rackWidth);
-      const frameMat = makeMaterial({
-        mode,
-        rgbHex: 0x1f2733,
-        roughness: 0.5,
-        metalness: 0.6,
-        tempNorm: 0.22 + (side > 0 ? 0.06 : 0.02)
-      });
-      const frameMesh = new THREE.Mesh(frameGeo, frameMat);
-      frameMesh.position.y = rackHeight / 2;
-      rackGroup.add(frameMesh);
-
-      // 12 Server Chassis per rack
-      for (let u = 0; u < 12; u++) {
-        const yPos = 0.18 + u * 0.15;
-        const loadFactor = 0.32 + 0.35 * rand() + (side > 0 && idx === 2 ? 0.22 : 0.0);
-        const chassisGeo = new THREE.BoxGeometry(0.12, 0.11, rackWidth * 0.86);
-        const chassisMat = makeMaterial({
-          mode,
-          rgbHex: 0x2d3746,
-          roughness: 0.4,
-          metalness: 0.7,
-          tempNorm: Math.min(0.92, loadFactor)
-        });
-        const chassis = new THREE.Mesh(chassisGeo, chassisMat);
-        chassis.position.set(-side * (rackDepth / 2 + 0.02), yPos, 0);
-        rackGroup.add(chassis);
-
-        // Status LED / exhaust hotspot
-        const ledGeo = new THREE.BoxGeometry(0.02, 0.025, 0.04);
-        const isFaultSide = side > 0 && idx === 2 && u >= 6 && u <= 9;
-        const ledMat = makeMaterial({
-          mode,
-          rgbHex: isFaultSide ? 0xff3b2f : 0x26e67c,
-          emissiveHex: isFaultSide ? 0xff3b2f : 0x18b25d,
-          tempNorm: isFaultSide ? 0.91 : loadFactor + 0.1
-        });
-        const led = new THREE.Mesh(ledGeo, ledMat);
-        led.position.set(-side * (rackDepth / 2 + 0.085), yPos, rackWidth * 0.32);
-        rackGroup.add(led);
+      vec3 palette20to100(float u, float coreBoost) {
+        float x = clamp(u, 0.0, 1.0);
+        vec3 col;
+        if (x < 0.25) {
+          float k = x / 0.25;
+          col = mix(vec3(0.06, 0.04, 0.20), vec3(0.11, 0.20, 0.53), k);
+        } else if (x < 0.50) {
+          float k = (x - 0.25) / 0.25;
+          col = mix(vec3(0.11, 0.20, 0.53), vec3(0.50, 0.12, 0.45), k);
+        } else if (x < 0.72) {
+          float k = (x - 0.50) / 0.22;
+          col = mix(vec3(0.50, 0.12, 0.45), vec3(0.82, 0.36, 0.12), k);
+        } else if (x < 0.855) {
+          float k = (x - 0.72) / 0.135;
+          col = mix(vec3(0.82, 0.36, 0.12), vec3(0.95, 0.84, 0.38), k);
+        } else {
+          float k = clamp((x - 0.855) / (0.86188 - 0.855), 0.0, 1.0);
+          col = mix(vec3(0.95, 0.84, 0.38), vec3(0.992, 0.985, 0.96), k);
+        }
+        col = mix(col, vec3(1.0, 1.0, 1.0), coreBoost);
+        return clamp(col, 0.0, 1.0);
       }
 
-      // Vertical PDU strip mounted inside rear corner of each rack (N2 on left row, N3 on right row)
-      const isPrimaryHotPdu = side > 0 && idx === 2;
-      const pduTemp = side < 0 ? n2Norm : (isPrimaryHotPdu ? n3Norm : n3Norm * 0.86);
-      const pduGeo = new THREE.BoxGeometry(0.09, 1.92, 0.09);
-      const pduMat = makeMaterial({
-        mode,
-        rgbHex: side < 0 ? 0x1d4e89 : 0x9e2a2b,
-        roughness: 0.35,
-        metalness: 0.5,
-        emissiveHex: isPrimaryHotPdu ? 0x551100 : 0x000000,
-        tempNorm: pduTemp
-      });
-      const pduStrip = new THREE.Mesh(pduGeo, pduMat);
-      pduStrip.name = side < 0 ? `PDU_N2_RACK_${idx}` : `PDU_N3_RACK_${idx}`;
-      pduStrip.position.set(-side * (rackDepth / 2 + 0.05), 1.02, -rackWidth * 0.38);
-      rackGroup.add(pduStrip);
+      void main() {
+        // For the connector housing box, evaluate the 3D Gaussian on the connector center plane z=0.555
+        // along the camera ray so the 3D center [2.57, 1.2, 0.555] projects without front-face parallax.
+        vec3 evalPos = vWorldPos;
+        if (uIsConnector > 0.5) {
+          float dz = vWorldPos.z - cameraPosition.z;
+          if (abs(dz) > 1e-4) {
+            float tPlane = (uHotspotCenter.z - cameraPosition.z) / dz;
+            evalPos = cameraPosition + (vWorldPos - cameraPosition) * tPlane;
+          }
+        }
 
-      // Feeder Whip Conduit connecting PDU to overhead busway
-      const whipGeo = new THREE.CylinderGeometry(0.028, 0.028, 0.65, 12);
-      const whipMat = makeMaterial({
-        mode,
-        rgbHex: side < 0 ? 0x2b6cb0 : 0xc53030,
-        roughness: 0.45,
-        metalness: 0.3,
-        tempNorm: pduTemp * 0.96
-      });
-      const whip = new THREE.Mesh(whipGeo, whipMat);
-      whip.position.set(-side * (rackDepth / 2 + 0.05), 2.22, -rackWidth * 0.38);
-      rackGroup.add(whip);
+        float d = length(evalPos - uHotspotCenter);
+        float gauss = exp(-(d * d) / (2.0 * uSigmaM * uSigmaM));
 
-      scene.add(rackGroup);
-    });
+        // Subtle geometric shading on cold background structures so rack silhouettes remain legible
+        float rim = 0.8 * abs(vWorldNormal.z) + 0.2 * abs(vWorldNormal.y);
+        float localBaseC = uBaseTempC + 1.2 * rim * (1.0 - gauss);
+
+        float tempC = localBaseC + (uPeakTempC - localBaseC) * gauss;
+        float u = (tempC - uMinTempC) / (uMaxTempC - uMinTempC);
+
+        // Pinpoint sub-millimeter core peak at d=0 on the N4 connector
+        float coreBoost = uIsConnector * exp(-(d * d) / (2.0 * 0.0022 * 0.0022));
+        vec3 rgb = palette20to100(u, coreBoost);
+        gl_FragColor = vec4(rgb, 1.0);
+      }
+    `
   });
-
-  // Overhead Cable Trays & Busways (Feeder N2 left, Feeder N3 right)
-  [-1, 1].forEach((side) => {
-    const busNorm = side < 0 ? n2Norm : n3Norm;
-    const trayGeo = new THREE.BoxGeometry(0.32, 0.08, 6.2);
-    const trayMat = makeMaterial({
-      mode,
-      rgbHex: side < 0 ? 0x254e77 : 0x7c2d25,
-      roughness: 0.4,
-      metalness: 0.65,
-      tempNorm: busNorm * 0.92
-    });
-    const tray = new THREE.Mesh(trayGeo, trayMat);
-    tray.name = side < 0 ? 'BUSWAY_FEEDER_N2' : 'BUSWAY_FEEDER_N3';
-    tray.position.set(side * 0.85, 2.48, -0.6);
-    scene.add(tray);
-  });
-
-  // Cross-aisle ladder rungs
-  for (let z = -2.8; z <= 1.8; z += 0.65) {
-    const rungGeo = new THREE.BoxGeometry(1.75, 0.035, 0.06);
-    const rungMat = makeMaterial({
-      mode,
-      rgbHex: 0x3a4756,
-      roughness: 0.5,
-      metalness: 0.7,
-      tempNorm: 0.34
-    });
-    const rung = new THREE.Mesh(rungGeo, rungMat);
-    rung.position.set(0, 2.42, z);
-    scene.add(rung);
-  }
-
-  return scene;
 }
 
-export function renderDeterministicScene() {
-  const config = parseSceneParams();
+/**
+ * Project a 3D world point [x, y, z] into 2D viewport pixel coordinates [px, py].
+ */
+export function projectWorldToPixel(worldPt, camera, width = VIEWPORT_WIDTH, height = VIEWPORT_HEIGHT) {
+  const v = new THREE.Vector3(worldPt[0], worldPt[1], worldPt[2]);
+  v.project(camera);
+  const px = (v.x * 0.5 + 0.5) * width;
+  const py = (-v.y * 0.5 + 0.5) * height;
+  return [Number(px.toFixed(2)), Number(py.toFixed(2))];
+}
+
+/**
+ * Compute projected 2D pixel bounding box [xMin, yMin, xMax, yMax] of a 3D box.
+ */
+export function computeProjectedBoxBBox(center, size, camera, width = VIEWPORT_WIDTH, height = VIEWPORT_HEIGHT) {
+  const [cx, cy, cz] = center;
+  const [sx, sy, sz] = size;
+  const hx = sx / 2;
+  const hy = sy / 2;
+  const hz = sz / 2;
+
+  let minX = Infinity;
+  let minY = Infinity;
+  let maxX = -Infinity;
+  let maxY = -Infinity;
+
+  for (const dx of [-hx, hx]) {
+    for (const dy of [-hy, hy]) {
+      for (const dz of [-hz, hz]) {
+        const [px, py] = projectWorldToPixel([cx + dx, cy + dy, cz + dz], camera, width, height);
+        if (px < minX) minX = px;
+        if (py < minY) minY = py;
+        if (px > maxX) maxX = px;
+        if (py > maxY) maxY = py;
+      }
+    }
+  }
+  return [
+    Math.round(minX),
+    Math.round(minY),
+    Math.round(maxX),
+    Math.round(maxY)
+  ];
+}
+
+/**
+ * Build the complete deterministic rear-aisle 3D scene with dual RGB and Thermal materials.
+ */
+function createSceneGraph() {
+  const rand = mulberry32(0x424c4b32);
+  const scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x090d14);
+
+  const meshRegistry = [];
+  const registerMesh = (mesh, rgbMaterial, thermalMaterial) => {
+    mesh.userData.rgbMaterial = rgbMaterial;
+    mesh.userData.thermalMaterial = thermalMaterial;
+    mesh.material = rgbMaterial;
+    meshRegistry.push(mesh);
+    return mesh;
+  };
+
+  // Lights for RGB mode
+  const lightGroup = new THREE.Group();
+  const ambientLight = new THREE.AmbientLight(0xd4e4f7, 1.15);
+  lightGroup.add(ambientLight);
+
+  const keyLight = new THREE.DirectionalLight(0xf5f9ff, 1.85);
+  keyLight.position.set(1.23, 3.6, 4.2);
+  lightGroup.add(keyLight);
+
+  const fillLightLeft = new THREE.PointLight(0x8ec5ff, 1.35, 9.0);
+  fillLightLeft.position.set(-0.4, 2.2, 2.5);
+  lightGroup.add(fillLightLeft);
+
+  const fillLightRight = new THREE.PointLight(0x9ad0ff, 1.45, 9.0);
+  fillLightRight.position.set(2.8, 2.2, 2.5);
+  lightGroup.add(fillLightRight);
+
+  scene.add(lightGroup);
+
+  // Raised Floor (y = 0)
+  const floorGeo = new THREE.PlaneGeometry(8.0, 7.0);
+  const floorRgbMat = new THREE.MeshStandardMaterial({
+    color: 0x161d27,
+    roughness: 0.72,
+    metalness: 0.22
+  });
+  const floorThermMat = createThermalShaderMaterial({ baseTempC: 23.5 });
+  const floorMesh = registerMesh(new THREE.Mesh(floorGeo, floorRgbMat), floorRgbMat, floorThermMat);
+  floorMesh.rotation.x = -Math.PI / 2;
+  floorMesh.position.set(1.23, 0.0, 1.2);
+  scene.add(floorMesh);
+
+  // Subtle floor tile grid
+  const gridHelper = new THREE.GridHelper(7.0, 14, 0x283546, 0x1e2938);
+  gridHelper.position.set(1.23, 0.002, 1.2);
+  scene.add(gridHelper);
+
+  const perfTexture = createPerforatedDoorTexture();
+
+  // Four Cabinets N1..N4
+  for (const spec of RACK_SPECS) {
+    const rackGroup = new THREE.Group();
+    rackGroup.name = `RACK_${spec.id}`;
+
+    // Cabinet body: 0.6m x 2.0m x 1.0m centered at (centerX, 1.0, 0.0) so rear face is at z = +0.5
+    const bodyGeo = new THREE.BoxGeometry(0.60, 2.00, 1.00);
+    const bodyRgbMat = new THREE.MeshStandardMaterial({
+      color: 0x212a36,
+      roughness: 0.52,
+      metalness: 0.58
+    });
+    const bodyThermMat = createThermalShaderMaterial({ baseTempC: spec.baseTempC });
+    const bodyMesh = registerMesh(new THREE.Mesh(bodyGeo, bodyRgbMat), bodyRgbMat, bodyThermMat);
+    bodyMesh.position.set(spec.centerX, 1.00, 0.00);
+    rackGroup.add(bodyMesh);
+
+    // Perforated rear door insert panel on z = +0.502
+    const doorGeo = new THREE.PlaneGeometry(0.52, 1.66);
+    const doorRgbMat = new THREE.MeshStandardMaterial({
+      map: perfTexture,
+      roughness: 0.6,
+      metalness: 0.45
+    });
+    const doorThermMat = createThermalShaderMaterial({ baseTempC: spec.baseTempC + 1.0 });
+    const doorMesh = registerMesh(new THREE.Mesh(doorGeo, doorRgbMat), doorRgbMat, doorThermMat);
+    doorMesh.position.set(spec.centerX, 0.92, 0.502);
+    rackGroup.add(doorMesh);
+
+    // Server chassis faceplates visible behind rear frame rails
+    for (let slot = 0; slot < 8; slot++) {
+      const slotY = 0.24 + slot * 0.19;
+      const srvGeo = new THREE.BoxGeometry(0.46, 0.12, 0.02);
+      const srvRgbMat = new THREE.MeshStandardMaterial({
+        color: 0x2d3848,
+        roughness: 0.42,
+        metalness: 0.65
+      });
+      const srvThermMat = createThermalShaderMaterial({
+        baseTempC: spec.baseTempC + 1.5 + 0.8 * rand()
+      });
+      const srvMesh = registerMesh(new THREE.Mesh(srvGeo, srvRgbMat), srvRgbMat, srvThermMat);
+      srvMesh.position.set(spec.centerX - 0.02, slotY, 0.506);
+      rackGroup.add(srvMesh);
+    }
+
+    // Vertical rear PDU busbar channel along right side of each cabinet (x = centerX + 0.11, z = 0.515)
+    const pduGeo = new THREE.BoxGeometry(0.065, 1.78, 0.03);
+    const pduRgbMat = new THREE.MeshStandardMaterial({
+      color: 0x39475b,
+      roughness: 0.38,
+      metalness: 0.72
+    });
+    const pduThermMat = createThermalShaderMaterial({ baseTempC: spec.baseTempC + 1.8 });
+    const pduMesh = registerMesh(new THREE.Mesh(pduGeo, pduRgbMat), pduRgbMat, pduThermMat);
+    pduMesh.position.set(spec.centerX + 0.11, 0.96, 0.515);
+    rackGroup.add(pduMesh);
+
+    // Overhead feeder whip conduit rising from cabinet top to cable tray
+    const whipGeo = new THREE.CylinderGeometry(0.022, 0.022, 0.32, 12);
+    const whipRgbMat = new THREE.MeshStandardMaterial({
+      color: 0x4b5d75,
+      roughness: 0.45,
+      metalness: 0.55
+    });
+    const whipThermMat = createThermalShaderMaterial({ baseTempC: spec.baseTempC + 0.5 });
+    const whipMesh = registerMesh(new THREE.Mesh(whipGeo, whipRgbMat), whipRgbMat, whipThermMat);
+    whipMesh.position.set(spec.centerX + 0.11, 2.15, 0.42);
+    rackGroup.add(whipMesh);
+
+    // High-contrast rack header label placard ("N1".."N4") at top of rear face
+    const labelGeo = new THREE.PlaneGeometry(0.32, 0.12);
+    const labelTex = createRackLabelTexture(spec.id);
+    const labelRgbMat = new THREE.MeshBasicMaterial({ map: labelTex });
+    const labelThermMat = createThermalShaderMaterial({ baseTempC: spec.baseTempC + 2.2 });
+    const labelMesh = registerMesh(new THREE.Mesh(labelGeo, labelRgbMat), labelRgbMat, labelThermMat);
+    labelMesh.position.set(spec.centerX, 1.89, 0.508);
+    rackGroup.add(labelMesh);
+
+    // Standard healthy connector housing on N1, N2, N3 at matching height y = 1.20
+    if (spec.id !== 'N4') {
+      const stdConnGeo = new THREE.BoxGeometry(0.12, 0.15, 0.045);
+      const stdConnRgbMat = new THREE.MeshStandardMaterial({
+        color: 0x435368,
+        roughness: 0.4,
+        metalness: 0.68
+      });
+      const stdConnThermMat = createThermalShaderMaterial({ baseTempC: spec.baseTempC + 2.0 });
+      const stdConn = registerMesh(new THREE.Mesh(stdConnGeo, stdConnRgbMat), stdConnRgbMat, stdConnThermMat);
+      stdConn.position.set(spec.centerX + 0.11, 1.20, 0.545);
+      rackGroup.add(stdConn);
+    }
+
+    scene.add(rackGroup);
+  }
+
+  // Overhead horizontal cable tray spanning x = -0.45 to 2.95 at y = 2.28, z = 0.42
+  const trayGeo = new THREE.BoxGeometry(3.45, 0.07, 0.28);
+  const trayRgbMat = new THREE.MeshStandardMaterial({
+    color: 0x2f3b4c,
+    roughness: 0.48,
+    metalness: 0.62
+  });
+  const trayThermMat = createThermalShaderMaterial({ baseTempC: 26.5 });
+  const trayMesh = registerMesh(new THREE.Mesh(trayGeo, trayRgbMat), trayRgbMat, trayThermMat);
+  trayMesh.position.set(1.23, 2.28, 0.42);
+  scene.add(trayMesh);
+
+  // Fault connector on N4: exact center [2.57, 1.2, 0.555], size 0.15 x 0.19 x 0.06 m
+  const faultGeo = new THREE.BoxGeometry(...FAULT_CONNECTOR_SPEC.size);
+  const faultRgbMat = new THREE.MeshStandardMaterial({
+    color: 0x56667a,
+    roughness: 0.36,
+    metalness: 0.74
+  });
+  const faultThermMat = createThermalShaderMaterial({
+    baseTempC: 34.0,
+    isConnector: true
+  });
+  const faultMesh = registerMesh(new THREE.Mesh(faultGeo, faultRgbMat), faultRgbMat, faultThermMat);
+  faultMesh.name = 'N4_FAULT_CONNECTOR';
+  faultMesh.position.set(...FAULT_CONNECTOR_SPEC.center);
+  scene.add(faultMesh);
+
+  return { scene, meshRegistry, lightGroup, gridHelper };
+}
+
+/**
+ * Initialize renderer, reference camera, mode switcher, and metadata exports.
+ */
+export function initBlackboxScene() {
+  const params = new URLSearchParams(window.location.search);
+  const initialMode = params.get('mode') === 'thermal' ? 'thermal' : 'rgb';
+
   const canvas = document.getElementById('viewport');
-  const hud = document.getElementById('hud');
+  const legendEl = document.getElementById('thermal-legend');
 
   const renderer = new THREE.WebGLRenderer({
     canvas,
     antialias: true,
+    alpha: false,
     preserveDrawingBuffer: true,
     powerPreference: 'high-performance'
   });
   renderer.setPixelRatio(1);
-  renderer.setSize(config.width, config.height, false);
+  renderer.setSize(VIEWPORT_WIDTH, VIEWPORT_HEIGHT, false);
+  renderer.toneMapping = THREE.NoToneMapping;
+  renderer.outputColorSpace = THREE.SRGBColorSpace;
 
-  const pose = CAMERA_POSES[config.poseKey] || CAMERA_POSES.aisle_overview;
   const camera = new THREE.PerspectiveCamera(
-    pose.fov,
-    config.width / config.height,
-    0.1,
-    50.0
+    REFERENCE_CAMERA_SPEC.fov,
+    REFERENCE_CAMERA_SPEC.aspect,
+    REFERENCE_CAMERA_SPEC.near,
+    REFERENCE_CAMERA_SPEC.far
   );
-  camera.position.set(...pose.position);
-  camera.lookAt(...pose.target);
+  camera.position.set(...REFERENCE_CAMERA_SPEC.position);
+  camera.lookAt(...REFERENCE_CAMERA_SPEC.lookAt);
+  camera.updateMatrixWorld(true);
+  camera.updateProjectionMatrix();
 
-  const scene = buildDataCenterScene(config);
-  renderer.render(scene, camera);
+  const { scene, meshRegistry, lightGroup, gridHelper } = createSceneGraph();
 
-  if (hud) {
-    hud.textContent = `BLACKBOX-DC // MODE=${config.mode.toUpperCase()} // POSE=${config.poseKey.toUpperCase()} // N2=${config.n2TempC.toFixed(1)}C // N3=${config.n3TempC.toFixed(1)}C`;
+  function applyModeAndRender(mode) {
+    const normalizedMode = mode === 'thermal' ? 'thermal' : 'rgb';
+    scene.background = new THREE.Color(normalizedMode === 'thermal' ? 0x060412 : 0x090d14);
+    lightGroup.visible = normalizedMode === 'rgb';
+    gridHelper.visible = normalizedMode === 'rgb';
+
+    for (const mesh of meshRegistry) {
+      mesh.material = normalizedMode === 'thermal'
+        ? mesh.userData.thermalMaterial
+        : mesh.userData.rgbMaterial;
+    }
+
+    if (legendEl) {
+      legendEl.style.display = normalizedMode === 'thermal' ? 'block' : 'none';
+    }
+
+    camera.updateMatrixWorld(true);
+    camera.updateProjectionMatrix();
+    renderer.render(scene, camera);
+
+    const projectedCenter = projectWorldToPixel(FAULT_CONNECTOR_SPEC.center, camera);
+    const projectedBBox = computeProjectedBoxBBox(
+      FAULT_CONNECTOR_SPEC.center,
+      FAULT_CONNECTOR_SPEC.size,
+      camera
+    );
+
+    const meta = {
+      mode: normalizedMode,
+      threeVersion: THREE.REVISION,
+      viewport: {
+        width: VIEWPORT_WIDTH,
+        height: VIEWPORT_HEIGHT,
+        devicePixelRatio: 1
+      },
+      camera: {
+        position: [...camera.position.toArray()],
+        lookAt: [...REFERENCE_CAMERA_SPEC.lookAt],
+        fov: camera.fov,
+        aspect: camera.aspect,
+        near: camera.near,
+        far: camera.far,
+        matrixWorld: camera.matrixWorld.toArray().map((v) => Number(v.toFixed(6))),
+        projectionMatrix: camera.projectionMatrix.toArray().map((v) => Number(v.toFixed(6)))
+      },
+      racks: RACK_SPECS.map((r) => ({
+        id: r.id,
+        center: [r.centerX, 1.0, 0.0],
+        dimensions: [0.6, 2.0, 1.0]
+      })),
+      faultConnector: {
+        rackId: FAULT_CONNECTOR_SPEC.rackId,
+        worldCenter: [...FAULT_CONNECTOR_SPEC.center],
+        size: [...FAULT_CONNECTOR_SPEC.size],
+        projectedPixelCenter: projectedCenter,
+        projectedPixelBBox: projectedBBox,
+        peakTempC: FAULT_CONNECTOR_SPEC.peakTempC,
+        sigmaM: FAULT_CONNECTOR_SPEC.sigmaM
+      },
+      lighting: {
+        toneMapping: 'NoToneMapping',
+        outputColorSpace: 'srgb',
+        ambientIntensity: 1.15,
+        keyLightIntensity: 1.85,
+        keyLightPosition: [1.23, 3.6, 4.2]
+      },
+      thermalScale: {
+        label: 'SYNTHETIC TEMPERATURE: 20°C — 100°C',
+        minTempC: 20.0,
+        maxTempC: 100.0,
+        peakTempC: FAULT_CONNECTOR_SPEC.peakTempC,
+        sigmaM: FAULT_CONNECTOR_SPEC.sigmaM
+      }
+    };
+
+    window.__BLACKBOX_RENDER_META__ = Object.freeze(meta);
+    return meta;
   }
 
-  window.__BLACKBOX_SCENE_READY__ = true;
-  window.__BLACKBOX_RENDER_META__ = {
-    mode: config.mode,
-    pose: config.poseKey,
-    width: config.width,
-    height: config.height,
-    n2TempC: config.n2TempC,
-    n3TempC: config.n3TempC
+  window.setRenderMode = (mode) => applyModeAndRender(mode);
+
+  window.setCameraPose = (position, lookAt = REFERENCE_CAMERA_SPEC.lookAt) => {
+    camera.position.set(position[0], position[1], position[2]);
+    camera.lookAt(lookAt[0], lookAt[1], lookAt[2]);
+    const currentMode = window.__BLACKBOX_RENDER_META__?.mode || initialMode;
+    return applyModeAndRender(currentMode);
   };
+
+  applyModeAndRender(initialMode);
+  window.__BLACKBOX_SCENE_READY__ = true;
 }
 
 if (typeof window !== 'undefined') {
-  renderDeterministicScene();
+  initBlackboxScene();
 }

@@ -38,10 +38,11 @@ def run_ab_campaign(
     )
     sld_meta: Dict[str, Any] = {}
     for cid in ("case_A", "case_B"):
-        sld_meta[cid] = render_sld_png(
+        rendered = render_sld_png(
             case_id=cid,
             output_path=artifacts_root / cid / f"sld_{cid}.png",
         )
+        sld_meta[cid] = dict(rendered) if hasattr(rendered, "keys") else str(rendered)
 
     # 3. Execute 4 interactions per case (I1, A1, Probe, I2, A2) -> 8 interactions total
     case_runs: Dict[str, CaseProtocolRunResult] = {}

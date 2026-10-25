@@ -122,12 +122,14 @@ def grade_ab_campaign(
 ) -> Dict[str, Any]:
     """Evaluate paired A/B campaign disambiguation across Case A and Case B."""
     feeder_shifted_correctly = (
-        run_a.i2.diagnosed_fault_feeder == "F2"
-        and run_b.i2.diagnosed_fault_feeder == "F3"
+        run_a.i2.diagnosed_fault_feeder != run_b.i2.diagnosed_fault_feeder
+        and grade_a.i2_feeder_correct
+        and grade_b.i2_feeder_correct
     )
     auditor_shifted_correctly = (
-        run_a.a2.verified_fault_feeder == "F2"
-        and run_b.a2.verified_fault_feeder == "F3"
+        run_a.a2.verified_fault_feeder != run_b.a2.verified_fault_feeder
+        and grade_a.a2_feeder_correct
+        and grade_b.a2_feeder_correct
     )
     campaign_pass = bool(
         grade_a.overall_case_pass
