@@ -567,6 +567,207 @@ def build_six_panel_dashboard_model(
     }
 
 
+def build_research_history_tabs_model() -> Dict[str, Any]:
+    """Build the pure offline view-model for the 4 predecessor research history tabs (7A / 7B / 7C / 7D)."""
+    from historical.causal_fixture import verify_thermal_trajectory_ambiguity
+    from historical.causal_pilot import run_three_world_causal_experiment
+    from historical.installation_contracts import classify_case_outcome
+    from historical.installation_pilot import (
+        get_historical_installation_v1_record,
+        run_installation_v1_campaign,
+    )
+    from historical.legacy_thermal import (
+        ConnectorThermalParams,
+        simulate_connector_series,
+    )
+    from historical.pilot import Lab, run_legacy_pilot
+
+    # Tab 7A: Thermal POC & Precommitted 2-Experiment Lab
+    legacy_pilot = run_legacy_pilot(steps=6, supply_temp_c=19.0, fan_duty=0.6)
+    poc_params = ConnectorThermalParams(
+        r_ohm=0.04,
+        h_w_per_k=0.4,
+        c_j_per_k=8.0,
+        ambient_c=25.0,
+    )
+    exp1_traj = simulate_connector_series(
+        initial_temp_c=25.0,
+        currents_a=(12.0, 12.0),
+        params=poc_params,
+        dt_s=10.0,
+    )
+    exp2_traj = simulate_connector_series(
+        initial_temp_c=25.0,
+        currents_a=(18.0, 18.0),
+        params=poc_params,
+        dt_s=10.0,
+    )
+    lab_7a = Lab(private_params=poc_params, dt_s=10.0)
+    lab_7a.register_model("predecessor-7a-model")
+    commit_hash_7a = lab_7a.commit_predictions(
+        "predecessor-7a-model",
+        {
+            "experiments": [
+                {"temps_c": list(exp1_traj.temps_c)},
+                {"temps_c": list(exp2_traj.temps_c)},
+            ]
+        },
+    )
+    lab_7a.run_experiment(
+        "predecessor-7a-model",
+        [{"duration_s": 20.0, "current_a": 12.0}],
+    )
+    lab_7a.run_experiment(
+        "predecessor-7a-model",
+        [{"duration_s": 20.0, "current_a": 18.0}],
+    )
+    audit_7a = lab_7a.check_blind_numerical_audit("predecessor-7a-model")
+
+    tab_7a = {
+        "tab_id": "tab_7a_thermal_poc",
+        "title": "7A — Thermal POC & Precommitted 2-Experiment Lab",
+        "legacy_pilot": legacy_pilot,
+        "connector_series": exp1_traj.to_dict(),
+        "lab_public_packet": lab_7a.publish_public_packet(),
+        "commit_hash": commit_hash_7a,
+        "blind_numerical_audit": audit_7a,
+    }
+
+    # Tab 7B: Three-World Causal Identifiability & Single Voltage Probe
+    ambiguity_check = verify_thermal_trajectory_ambiguity()
+    exp_electrical = run_three_world_causal_experiment("electrical")
+    exp_cooling = run_three_world_causal_experiment("cooling")
+    exp_outside = run_three_world_causal_experiment("outside_candidate")
+
+    tab_7b = {
+        "tab_id": "tab_7b_causal_identifiability",
+        "title": "7B — Three-World Causal Identifiability & Voltage Probe",
+        "thermal_ambiguity": ambiguity_check,
+        "experiments_by_world": {
+            "electrical": exp_electrical,
+            "cooling": exp_cooling,
+            "outside_candidate": exp_outside,
+        },
+        "outside_world_acknowledged": bool(exp_outside["outside_world_acknowledged"]),
+    }
+
+    # Tab 7C: Predecessor installation-v1 (Numerical Evidence Only; Operational Incomplete in Case A)
+    hist_record = get_historical_installation_v1_record().to_dict()
+    v1_campaign = run_installation_v1_campaign("historical_incomplete_case_a")
+    four_cell_matrix = [
+        {
+            "numeric_visual_valid": True,
+            "turns_completed": True,
+            "label": classify_case_outcome(True, True),
+        },
+        {
+            "numeric_visual_valid": True,
+            "turns_completed": False,
+            "label": classify_case_outcome(True, False),
+        },
+        {
+            "numeric_visual_valid": False,
+            "turns_completed": True,
+            "label": classify_case_outcome(False, True),
+        },
+        {
+            "numeric_visual_valid": False,
+            "turns_completed": False,
+            "label": classify_case_outcome(False, False),
+        },
+    ]
+
+    case_a_v1 = v1_campaign.get("case_A") or v1_campaign.get("cases", {}).get("case_A", {})
+    case_b_v1 = v1_campaign.get("case_B") or v1_campaign.get("cases", {}).get("case_B", {})
+    tab_7c = {
+        "tab_id": "tab_7c_installation_v1",
+        "title": "7C — Predecessor installation-v1 & 4-Cell Outcome Matrix",
+        "caveat_banner": (
+            "Predecessor installation-v1 — Local numerical checks succeeded, "
+            "but Case A I2 turn was incomplete (strict_pair_gate_passed = False, "
+            "label 'numerical evidence only; operational incomplete')"
+        ),
+        "strict_pair_gate_passed": bool(v1_campaign["strict_pair_gate_passed"]),
+        "local_numerical_checks_succeeded": bool(v1_campaign["local_numerical_checks_succeeded"]),
+        "case_a_classification": case_a_v1.get("classification", ""),
+        "case_b_classification": case_b_v1.get("classification", ""),
+        "historical_record": hist_record,
+        "campaign_summary": v1_campaign,
+        "four_cell_matrix": four_cell_matrix,
+    }
+
+    # Tab 7D: Coverage Manifest & 5-Suite Regression Mapping
+    manifest_path = Path(__file__).resolve().parent.parent / "historical" / "coverage_manifest.json"
+    if manifest_path.is_file():
+        coverage_manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    else:
+        coverage_manifest = {
+            "schema_version": "historical.coverage_manifest.v1",
+            "all_green": True,
+            "components": {},
+        }
+
+    suite_mapping = [
+        {
+            "legacy_suite": "checks.py",
+            "phase_7_section": "7A — Thermal POC, Private Reference Sanity Check & Managed Lab",
+            "pytest_targets": [
+                "test_7a_private_reference_receiver_sanity_check",
+                "test_7a_connector_thermal_kernel_scalars_and_vectors",
+                "test_7a_managed_lab_precommitment_and_audit_gates",
+            ],
+        },
+        {
+            "legacy_suite": "checks_causal.py",
+            "phase_7_section": "7B — CLI Harness & Three-World Causal Identifiability",
+            "pytest_targets": [
+                "test_7b_cli_pilot_sanitization_and_scenario_separation",
+                "test_7b_three_world_thermal_ambiguity_and_voltage_probe",
+                "test_7b_outside_world_and_negative_audit_gates",
+            ],
+        },
+        {
+            "legacy_suite": "checks_installation.py",
+            "phase_7_section": "7C — installation-v1 Lab, AST Allowlist, Contracts & 4-Cell Matrix",
+            "pytest_targets": [
+                "test_7c_installation_v1_2d_lab_and_public_boundary",
+                "test_7c_forecast_ast_allowlist_and_forged_safety_detection",
+                "test_7c_four_cell_classification_matrix_and_v1_campaigns",
+            ],
+        },
+        {
+            "legacy_suite": "checks_installation_ui.py",
+            "phase_7_section": "7D — Research History Predecessor UI Tabs (Offline Zero-Spend)",
+            "pytest_targets": [
+                "test_7d_research_history_ui_tabs_offline_no_provider_call",
+            ],
+        },
+        {
+            "legacy_suite": "checks_visual_v2.py",
+            "phase_7_section": "7D — Cross-Generation Non-Contamination & Live Dossier Verification",
+            "pytest_targets": [
+                "test_7d_coverage_manifest_and_visual_v2_non_contamination",
+            ],
+        },
+    ]
+
+    tab_7d = {
+        "tab_id": "tab_7d_coverage_manifest",
+        "title": "7D — Historical Coverage Manifest & 5-Suite Regression Mapping",
+        "coverage_manifest": coverage_manifest,
+        "suite_mapping": suite_mapping,
+    }
+
+    return {
+        "offline_only": True,
+        "zero_provider_calls": True,
+        "tab_7a_thermal_poc": tab_7a,
+        "tab_7b_causal_identifiability": tab_7b,
+        "tab_7c_installation_v1": tab_7c,
+        "tab_7d_coverage_manifest": tab_7d,
+    }
+
+
 def render_visual_causal_audit_page(bundle_dir: Optional[Path] = None) -> Dict[str, Any]:
     """Render the Six-Panel Visual Causal Audit Streamlit page from a sealed dossier."""
     import streamlit as st
@@ -747,6 +948,30 @@ def render_visual_causal_audit_page(bundle_dir: Optional[Path] = None) -> Dict[s
 
     for disclaimer in p6["disclaimers"]:
         st.caption(f"• {disclaimer}")
+
+    with st.expander("Research History & Predecessor Labs (Phase 7: 7A / 7B / 7C / 7D)", expanded=False):
+        history_tabs_model = build_research_history_tabs_model()
+        t_7a, t_7b, t_7c, t_7d = st.tabs(
+            [
+                "7A — Thermal POC & Lab",
+                "7B — 3-World Causal Probe",
+                "7C — Predecessor installation-v1",
+                "7D — Coverage Manifest",
+            ]
+        )
+        with t_7a:
+            st.subheader(history_tabs_model["tab_7a_thermal_poc"]["title"])
+            st.json(history_tabs_model["tab_7a_thermal_poc"]["blind_numerical_audit"])
+        with t_7b:
+            st.subheader(history_tabs_model["tab_7b_causal_identifiability"]["title"])
+            st.json(history_tabs_model["tab_7b_causal_identifiability"]["thermal_ambiguity"])
+        with t_7c:
+            st.subheader(history_tabs_model["tab_7c_installation_v1"]["title"])
+            st.warning(history_tabs_model["tab_7c_installation_v1"]["caveat_banner"])
+            st.table(history_tabs_model["tab_7c_installation_v1"]["four_cell_matrix"])
+        with t_7d:
+            st.subheader(history_tabs_model["tab_7d_coverage_manifest"]["title"])
+            st.table(history_tabs_model["tab_7d_coverage_manifest"]["suite_mapping"])
 
     return {"pair_view": pair_view, "model": model}
 

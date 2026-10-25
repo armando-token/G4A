@@ -1,0 +1,54 @@
+# Phase 7 — Historical Reconstruction & Full Predecessor Parity (`07_HISTORICAL_RECONSTRUCTION_AND_FULL_PARITY.md`)
+
+## 1. Architectural Purpose & Non-Conflation Invariant
+
+Phase 7 reconstructs the four predecessor experimental iterations (`7A` through `7D`) inside `/home/ubuntu/G4A/historical/` as thin, deterministic compatibility adapters layered over the canonical `blackbox/*` kernel (`blackbox/domain.py`, `blackbox/fixture.py`, `blackbox/managed.py`, `blackbox/contracts.py`, `blackbox/oracle.py`, and `blackbox/evidence.py`).
+
+### Non-Conflation & Honest Attribution Rules
+1. **Single Physics & Accounting Truth**: All connector step equations, OLS ramp fits, 68.0 A load conservation rules, and 3-ledger token accounting (`UNKNOWN_TURN_TOKEN_RESERVE = 30,000`) delegate to `blackbox/domain.py` and `blackbox/managed.py`.
+2. **Historical `installation-v1` Outcome Honesty**: The historical `installation-v1` paired run (`case_A` completed/passed; `case_B` incomplete on `I2`) is preserved with `strict_pair_passed = False` and `is_current_visual_v2_evidence = False`. It is never promoted to a passing pair.
+3. **Local CLI vs. Managed Agent Separation**: Local coding CLI subprocesses (`historical/cli_pilot.py`) always carry `is_managed_agent_evidence = False` and never count toward `visual-v2` Managed Agent (`antigravity-preview-09-2026`) live evidence.
+4. **No Fabricated Turn Recovery**: When a turn is interrupted or exhausts its token budget, the runner emits `operational_complete = False` and a derived `recovery_dossier` (`derived_from_partial_artifacts = True`, `fabricated_completed_turn = False`) rather than synthesizing a fake completed provider response.
+
+---
+
+## 2. Phase 7 Source Map (`7A` – `7D`)
+
+| Sub-Phase | Module Path | Reconstructed Symbols & Responsibilities | Canonical `blackbox/*` Delegation |
+| :--- | :--- | :--- | :--- |
+| **7A** | `historical/legacy_thermal.py` | `ConnectorThermalParams`, `ThermalTrajectory`, `compute_joule_heating_w`, `compute_equilibrium_temp_c`, `compute_time_constant_s`, `step_temperature_c`, `simulate_connector_series`, `simulate_installation_thermodynamics`, plus legacy `RackSpec`, `ThermalState`, `compute_rack_hotspot`, `simulate_thermal_step` | Delegates step physics to `blackbox.domain.step_temperature` with scalar `float` and `numpy.ndarray` broadcasting |
+| **7A** | `historical/pilot.py` | `canonical_json`, `sha256_hex`, `Store` (hash-chained append-only log), `validate_load_profile`, `build_experiment_schedule`, `Lab` (private truth seal, pre-experiment `commit_predictions`, 2-experiment cap, `build_auditor_packet`, `check_blind_numerical_audit`), `ManagedRunner` (`mock_counts_as_real=False`, `live_direct_function_calling_supported=False`, `reconcile_prior_cancelled_usage`), `run_legacy_pilot` | Delegates auth/usage/budget tracking to `blackbox.managed` (`resolve_auth_config`, `PairBudgetTracker`, `UNKNOWN_TURN_TOKEN_RESERVE`) |
+| **7B** | `historical/cli_pilot.py` | `discover_coding_cli`, `sanitize_cli_env`, `invoke_cli_bounded`, `compute_prediction_separation`, `ScenarioLab`, `main` | Uses `historical.legacy_thermal` and `historical.pilot.sha256_hex` with credential stripping and secret pattern guards |
+| **7B** | `historical/causal_fixture.py` | `DEFAULT_CAUSAL_SEED` (`20261024`), `VOLTAGE_NOISE_BOUND_V` (`0.002`), `CAUSAL_HIDDEN_WORLDS` (`electrical`, `cooling`, `outside_candidate`), `simulate_ramp_12_18_24a`, `verify_thermal_trajectory_ambiguity`, `compute_candidate_voltage_intervals`, `build_causal_public_packet`, `build_causal_private_manifest`, `precommit_voltage_probe`, `filter_supported_candidates`, `CausalFixture`, `build_cooling_dag_fixture` | Delegates thermal ramp evolution to `blackbox.domain.step_temperature` |
+| **7B** | `historical/causal_pilot.py` | `run_three_world_causal_experiment` (researcher precommitment, voltage-drop vs uninformative probe, interval overlap, `outside_supplied_hypotheses`, echo-auditor rejection, operational vs scientific separation, derived `recovery_dossier`), `run_causal_pilot` | Uses `historical.causal_fixture` |
+| **7C** | `historical/installation_lab.py` | Counterfactual `case_A` (`N2->F1`, `N3->F2`) vs `case_B` (`N2->F2`, `N3->F1`) installation worlds, `68.0 A` conservation, candidate actions (`NO_ACTION`, `MIGRATE_N4_TO_N2_8A`, `MIGRATE_N4_TO_N3_8A`), `+1.0 °C` sensitivity canary | Delegates electro-thermal simulation to `blackbox.domain` and `blackbox.fixture` |
+| **7C** | `historical/installation_contracts.py` | `InstallationPlanContract`, `InstallationChallengeContract`, `InstallationAuditReport`, `InstallationFollowupContract`, `InstallationPairCampaignSummary` (`extra="forbid"`, finite number & `physical_safety_certified=False` validators) | Aligns with `blackbox.contracts` hygiene rules |
+| **7C** | `historical/installation_pilot.py` | End-to-end paired installation pilot, baseline comparison (`no_action`, `fixed_n2_policy`, `privileged_oracle`), `verify_historical_installation_v1_bundle` (`case_A=completed`, `case_B=incomplete`, `strict_pair_passed=False`) | Delegates to `historical.installation_lab` and `historical.installation_contracts` |
+| **7D** | `blackbox/dashboard.py` & `tests/test_historical.py` | Historical bundle inspection mode in read-only dashboard + 5-suite parity tests and `historical/coverage_manifest.json` | Verifies full parity across `7A`, `7B`, `7C`, `7D`, and `visual-v2` |
+
+---
+
+## 3. Five-Suite Test Parity Matrix
+
+Every check from the five predecessor verification suites is mapped to deterministic unit tests in `tests/test_historical.py`, `tests/test_domain.py`, `tests/test_protocol.py`, `tests/test_oracle.py`, `tests/test_campaign.py`, and `tests/test_dashboard.py`:
+
+| Predecessor Suite | Covered Verification Items | Target Test Module(s) |
+| :--- | :--- | :--- |
+| **Suite 1: `checks.py` (Phase 7A Legacy Thermal & 2-Experiment Lab)** | 1. `compute_joule_heating_w`, `compute_equilibrium_temp_c`, `compute_time_constant_s`, `step_temperature_c` (scalars + `np.ndarray`)<br>2. Reject negative `r_ohm`, non-positive `h_w_per_k`, `c_j_per_k`, `dt_s`, and `NaN`/`Inf`<br>3. `simulate_connector_series` continuous state transfer across segments<br>4. `Store` append-only SHA-256 chain & tamper detection<br>5. `Lab` 2-experiment cap (`RuntimeError` on 3rd experiment)<br>6. Pre-experiment `commit_predictions` lock & post-hoc mutation rejection<br>7. Blind numerical audit (`check_blind_numerical_audit`)<br>8. `ManagedRunner` auth/mode resolution, `mock_counts_as_real=False`, `live_direct_function_calling_supported=False`, and cancelled-turn 30k reserve reconciliation<br>9. Sanitized CLI environment (`sanitize_cli_env`) & bounded subprocess timeout (`invoke_cli_bounded`) | `tests/test_historical.py` (`test_legacy_thermal_*`, `test_pilot_store_and_lab_*`, `test_managed_runner_*`, `test_cli_pilot_*`) |
+| **Suite 2: `checks_causal.py` (Phase 7B Three-World Causal Disambiguation)** | 1. Identical `12A/18A/24A` temperature trajectory (`< 1e-12 °C`) across `electrical` (`0.04, 0.4, 8.0`), `cooling` (`0.02, 0.2, 4.0`), and `outside_candidate` (`0.03, 0.3, 6.0`)<br>2. Distinct `24A` voltage drops (`~1.0985 V`, `~0.5493 V`, `~0.8239 V`) with bounded noise `[-0.002, +0.002] V` under seed `20261024`<br>3. Precommitted probe hash verification & post-probe mutation failure<br>4. Uninformative `thermal_recheck` probe leaves candidates ambiguous (`identifiable=False`)<br>5. Overlapping voltage intervals (`noise_bound_v` large) prevent unique identification<br>6. `outside_candidate` world produces `supported_candidates == []` and `conclusion == "outside_supplied_hypotheses"`<br>7. Echo-auditor without independent interval recomputation is rejected (`auditor.passed=False`)<br>8. Interrupted / budget-exhausted turn records `operational_complete=False` and derived `recovery_dossier` without fabricating a completed turn | `tests/test_historical.py` (`test_causal_three_world_*`) |
+| **Suite 3: `checks_installation.py` (Phase 7C Paired Counterfactual Installation Lab)** | 1. Paired `case_A` (`N2->F1`, `N3->F2`) vs `case_B` (`N2->F2`, `N3->F1`) with `68.0 A` current conservation<br>2. Action reversal (`MIGRATE_N4_TO_N3_8A` in Case A vs `MIGRATE_N4_TO_N2_8A` in Case B; wrong receiver overloads `F1` at `48.0 A > 44.0 A`)<br>3. Pydantic contracts (`InstallationPlanContract`, `InstallationChallengeContract`, `InstallationAuditReport`, `InstallationFollowupContract`, `InstallationPairCampaignSummary`) with `extra="forbid"` and `physical_safety_certified=False`<br>4. Historical `installation-v1` honest labeling (`case_A=completed`, `case_B=incomplete`, `strict_pair_passed=False`) | `tests/test_historical.py` (`test_installation_lab_*`, `test_historical_installation_v1_*`) |
+| **Suite 4: `checks_installation_ui.py` (Phase 7D Replay & UI Parity)** | 1. Read-only loading of `visual-v2` and historical `installation-v1` bundles<br>2. Prominent incomplete/historical banner when `strict_pair_passed == False`<br>3. Path traversal rejection and zero cloud credential leakage | `tests/test_dashboard.py`, `tests/test_historical.py` |
+| **Suite 5: `checks_visual_v2.py` (Central Multimodal `visual-v2` Campaign)** | 1. 3D RGB/thermal invariance + active SLD vector/raster `N2`/`N3` swap<br>2. 4-turn `L1..L4` hash chain & `GuardedOracleTruthLoader` single-probe barrier<br>3. Disjoint Investigator/Auditor `environment_id`s & `+1.0 °C` sensitivity canary<br>4. 13-boolean strict acceptance matrix & 11 tamper-detection scenarios | `tests/test_visual.py`, `tests/test_protocol.py`, `tests/test_oracle.py`, `tests/test_campaign.py` |
+
+---
+
+## 4. Four-Cell Execution & Scientific Classification Matrix
+
+Every historical and current run is classified across two orthogonal axes — **Operational Execution Completeness** and **Scientific / Causal Validity**:
+
+| Classification Cell | `operational_complete` | `scientific_correct` | `strict_pass` | Canonical Example |
+| :--- | :--- | :--- | :--- | :--- |
+| **Cell 1 — Completed & Scientifically Valid** | `True` | `True` | `True` | `phase5_live_pair_dossier` (`case_A` and `case_B` all 4 turns `completed`, `13/13` gates `True`, `strict_pair_passed = True`) |
+| **Cell 2 — Completed & Scientifically Invalid** | `True` | `False` | `False` | `fixed_n2_policy` in `case_A` (selects `MIGRATE_N4_TO_N2_8A`, overloading `F1` at `48.0 A > 44.0 A`) or `echo_auditor=True` |
+| **Cell 3 — Incomplete / Interrupted (Derived Recovery Dossier Only)** | `False` | `True` or `False` (diagnostic only) | `False` | Historical `installation-v1` `case_B` (`I2` `incomplete` at token cap) or `run_three_world_causal_experiment(..., interrupted_turn=True)` |
+| **Cell 4 — Offline / Deterministic Mock Execution** | `True` (`live_provider_evidence = False`) | `True` | `False` (`offline_strict_pass = True`) | `python -m blackbox.campaign dry-run` or `ManagedRunner(mode="mock")` (`mock_counts_as_real = False`) |

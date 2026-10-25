@@ -1,0 +1,193 @@
+{
+  "schema_version": "historical-coverage-manifest-v1",
+  "phase": "07_HISTORICAL_RECONSTRUCTION_AND_FULL_PARITY",
+  "non_conflation_invariants": {
+    "historical_installation_v1_strict_pair_passed": false,
+    "historical_counts_as_visual_v2_live_evidence": false,
+    "cli_subprocess_counts_as_managed_agent_evidence": false,
+    "mock_counts_as_real_provider_evidence": false,
+    "interrupted_turn_fabricates_completed_turn": false,
+    "physical_safety_certified": false
+  },
+  "subphases": {
+    "7A": {
+      "modules": [
+        "historical/legacy_thermal.py",
+        "historical/pilot.py"
+      ],
+      "canonical_delegation": [
+        "blackbox/domain.py",
+        "blackbox/managed.py"
+      ],
+      "symbols": [
+        "ConnectorThermalParams",
+        "ThermalTrajectory",
+        "compute_joule_heating_w",
+        "compute_equilibrium_temp_c",
+        "compute_time_constant_s",
+        "step_temperature_c",
+        "simulate_connector_series",
+        "simulate_installation_thermodynamics",
+        "canonical_json",
+        "sha256_hex",
+        "Store",
+        "validate_load_profile",
+        "build_experiment_schedule",
+        "Lab",
+        "ManagedRunner",
+        "run_legacy_pilot"
+      ]
+    },
+    "7B": {
+      "modules": [
+        "historical/cli_pilot.py",
+        "historical/causal_fixture.py",
+        "historical/causal_pilot.py"
+      ],
+      "canonical_delegation": [
+        "blackbox/domain.py",
+        "historical/legacy_thermal.py",
+        "historical/pilot.py"
+      ],
+      "symbols": [
+        "discover_coding_cli",
+        "sanitize_cli_env",
+        "invoke_cli_bounded",
+        "compute_prediction_separation",
+        "ScenarioLab",
+        "DEFAULT_CAUSAL_SEED",
+        "VOLTAGE_NOISE_BOUND_V",
+        "CAUSAL_HIDDEN_WORLDS",
+        "simulate_ramp_12_18_24a",
+        "verify_thermal_trajectory_ambiguity",
+        "compute_candidate_voltage_intervals",
+        "build_causal_public_packet",
+        "build_causal_private_manifest",
+        "precommit_voltage_probe",
+        "filter_supported_candidates",
+        "run_three_world_causal_experiment",
+        "run_causal_pilot"
+      ]
+    },
+    "7C": {
+      "modules": [
+        "historical/installation_lab.py",
+        "historical/installation_contracts.py",
+        "historical/installation_pilot.py"
+      ],
+      "canonical_delegation": [
+        "blackbox/domain.py",
+        "blackbox/fixture.py",
+        "blackbox/contracts.py"
+      ],
+      "symbols": [
+        "InstallationCaseSpec",
+        "build_installation_pair_cases",
+        "evaluate_installation_case",
+        "InstallationPlanContract",
+        "InstallationChallengeContract",
+        "InstallationAuditReport",
+        "InstallationFollowupContract",
+        "InstallationPairCampaignSummary",
+        "run_installation_pilot",
+        "verify_historical_installation_v1_bundle"
+      ]
+    },
+    "7D": {
+      "modules": [
+        "blackbox/dashboard.py",
+        "tests/test_historical.py",
+        "historical/coverage_manifest.json"
+      ],
+      "canonical_delegation": [
+        "blackbox/evidence.py",
+        "blackbox/dashboard.py"
+      ],
+      "symbols": [
+        "load_pair_view",
+        "verify_and_replay_bundle"
+      ]
+    }
+  },
+  "predecessor_suites": {
+    "checks.py": {
+      "subphase": "7A",
+      "test_file": "tests/test_historical.py",
+      "covered_requirements": [
+        "scalar_and_ndarray_joule_equilibrium_time_constant_and_step",
+        "reject_negative_resistance_nonpositive_conductance_heat_capacity_dt_and_nan_inf",
+        "simulate_connector_series_continuous_state_transfer",
+        "store_append_only_hash_chain_and_tamper_detection",
+        "lab_two_experiment_cap_and_precommitment_lock",
+        "blind_numerical_audit_rejects_post_hoc_mutation",
+        "managed_runner_auth_modes_and_cancelled_turn_reserve_reconciliation",
+        "cli_env_sanitization_secret_guard_and_bounded_timeout"
+      ]
+    },
+    "checks_causal.py": {
+      "subphase": "7B",
+      "test_file": "tests/test_historical.py",
+      "covered_requirements": [
+        "three_world_identical_thermal_ramp_12_18_24a",
+        "deterministic_bounded_voltage_noise_seed_20261024",
+        "precommitted_probe_hash_and_mutation_rejection",
+        "uninformative_thermal_recheck_probe_remains_ambiguous",
+        "interval_overlap_under_large_noise_prevents_unique_id",
+        "outside_candidate_world_concludes_outside_supplied_hypotheses",
+        "echo_auditor_rejected_without_independent_recomputation",
+        "interrupted_or_budget_exhausted_turn_emits_derived_recovery_dossier"
+      ]
+    },
+    "checks_installation.py": {
+      "subphase": "7C",
+      "test_file": "tests/test_historical.py",
+      "covered_requirements": [
+        "paired_case_a_and_case_b_68a_current_conservation",
+        "counterfactual_action_reversal_n3_vs_n2_and_f1_overload_rejection",
+        "installation_pydantic_contracts_extra_forbid_and_safety_uncertified",
+        "historical_installation_v1_honest_incomplete_pair_classification"
+      ]
+    },
+    "checks_installation_ui.py": {
+      "subphase": "7D",
+      "test_file": "tests/test_dashboard.py",
+      "covered_requirements": [
+        "readonly_bundle_loading_and_incomplete_banner",
+        "path_traversal_rejection_and_zero_credential_exposure"
+      ]
+    },
+    "checks_visual_v2.py": {
+      "subphase": "visual-v2",
+      "test_file": "tests/test_campaign.py",
+      "covered_requirements": [
+        "cross_case_rgb_thermal_packet_identity_and_sld_swap",
+        "four_turn_l1_to_l4_hash_chain_and_guarded_single_probe",
+        "disjoint_investigator_and_auditor_environments",
+        "thirteen_boolean_strict_gates_and_eleven_tamper_tests"
+      ]
+    }
+  },
+  "four_cell_classification_matrix": {
+    "cell_1_completed_and_scientifically_valid": {
+      "operational_complete": true,
+      "scientific_correct": true,
+      "strict_pass": true
+    },
+    "cell_2_completed_and_scientifically_invalid": {
+      "operational_complete": true,
+      "scientific_correct": false,
+      "strict_pass": false
+    },
+    "cell_3_incomplete_or_interrupted_recovery_dossier": {
+      "operational_complete": false,
+      "scientific_correct": true,
+      "strict_pass": false
+    },
+    "cell_4_offline_or_deterministic_mock": {
+      "operational_complete": true,
+      "live_provider_evidence": false,
+      "strict_pass": false,
+      "offline_strict_pass": true
+    }
+  }
+}
