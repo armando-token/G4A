@@ -14,8 +14,8 @@
 </p>
 
 <p align="center">
-  <img src="artifacts/preflight_visuals/demo_web_mockup.png" alt="BlackboxDC web interface showing the data center wiring diagram, thermal hotspot, and AI agent verdict side by side" width="100%" />
-  <br/><sub>The audit in action: the AI reads the wiring diagram (left), spots the overheating rack in thermal imagery (center), and the 13-point checklist confirms every reasoning step (right) — all tamper-proof.</sub>
+  <img src="docs/cover.jpg" alt="BlackboxDC Twin Repair: a 3D data-center aisle with racks N1–N4, the N4 connector at 89°C, and a panel to change today's wiring drawing" width="100%" />
+  <br/><sub>The live demo: the 3D twin shows a hot N4 connector and an outdated wiring map. Change today's drawing, then Argon compares it with the twin before the cables move.</sub>
 </p>
 
 <p align="center">
