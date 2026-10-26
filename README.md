@@ -2,14 +2,20 @@
 <h1 align="center">⚡ BlackboxDC</h1>
 
 <p align="center">
-  <strong>Counterfactual Visual & Electro-Thermal Causal Audit for AI Managed Agents</strong><br/>
-  <sub>Can a multimodal AI agent read a Single-Line Diagram, reason about physics, and make the right safety call — provably?</sub><br/><br/>
-  A deterministic, tamper-evident benchmark that proves <strong>Gemini 4 Argon</strong> correctly reverses a safety-critical 8 A load-migration recommendation when only the SLD topology changes — and a sandbox-isolated Auditor independently verifies every step.
+  <strong>Can an AI read an electrical diagram, find the overheating rack, and move the load to the right place — provably?</strong>
 </p>
 
 <p align="center">
-  <img src="artifacts/preflight_visuals/demo_web_mockup.png" alt="BlackboxDC web interface showing the counterfactual A/B audit with SLD topology, thermal imagery, and 13-gate strict pass" width="100%" />
-  <br/><sub>The interactive web experience: counterfactual SLD pair (Case A vs Case B), 3D thermal scene, and the 13-boolean strict gate — all cryptographically sealed.</sub>
+  We hand a <strong>Gemini 4 Argon</strong> agent a data-center wiring diagram plus thermal images showing a dangerous hotspot on server rack N4.<br/>
+  The agent must figure out <em>which</em> rack is overheating, <em>why</em> (bad connector vs poor cooling), and <em>where</em> to safely redirect 8 A of electrical load — a decision that prevents equipment damage.<br/><br/>
+  Then we <strong>swap two wires on the diagram</strong>. The correct answer flips. <strong>The AI gets both right.</strong><br/><br/>
+  A second AI agent, running in a <strong>completely separate sandbox</strong>, independently verifies every step.<br/>
+  Every claim is <strong>cryptographically sealed</strong> (SHA-256 hash chains) and can be verified offline with zero API keys.
+</p>
+
+<p align="center">
+  <img src="artifacts/preflight_visuals/demo_web_mockup.png" alt="BlackboxDC web interface showing the data center wiring diagram, thermal hotspot, and AI agent verdict side by side" width="100%" />
+  <br/><sub>The audit in action: the AI reads the wiring diagram (left), spots the overheating rack in thermal imagery (center), and the 13-point checklist confirms every reasoning step (right) — all tamper-proof.</sub>
 </p>
 
 <p align="center">
@@ -35,26 +41,26 @@
 </p>
 
 > [!TIP]
-> **Verify in one command — no API keys needed:**
+> **See it for yourself — no API keys, no network, one command:**
 > ```bash
 > python -m blackbox.campaign replay --bundle artifacts/reports/phase5_live_pair_dossier
 > ```
-> Recomputes all SHA-256 hash chains and 19-point physics trajectories offline. Or launch the full Streamlit dashboard: `streamlit run blackbox/dashboard.py`.
+> This replays the real Gemini 4 Argon session, recomputes every hash chain and physics trajectory, and proves the AI got both cases right. Or explore visually: `streamlit run blackbox/dashboard.py`.
 
 ## Scope coverage at a glance
 
-| Capability | Status | Where to verify |
+| What it proves | Status | Where to verify |
 |---|---|---|
-| **Counterfactual A/B audit**: SLD topology swap reverses the safety decision | ✅ Delivered | [`protocol.py`](blackbox/protocol.py) · [`fixture.py`](blackbox/fixture.py) · [§2](#2-core-technical-result) |
-| **Hotspot localization**: IoU ≥ 0.30 on N4 rear connector | ✅ Delivered | [`contracts.py`](blackbox/contracts.py) · [§4](#4-live-campaign-results) |
-| **Electro-thermal physics**: lumped RC ODE, fitted parameters, 19-point trajectories | ✅ Delivered | [`domain.py`](blackbox/domain.py) · `RMSE = 3.1e-7 °C` |
-| **Sandbox-isolated Auditor**: disjoint `environment_id`, independent topology extraction | ✅ Delivered | [`managed.py`](blackbox/managed.py) · [`agent_harness.py`](blackbox/agent_harness.py) |
-| **Cryptographic tamper evidence**: SHA-256 hash chain L1→L2→L3→L4, sealed bundles | ✅ Delivered | [`evidence.py`](blackbox/evidence.py) · [`campaign.py`](blackbox/campaign.py) |
-| **Token budget enforcement**: 280,000 noncached ceiling per paired campaign | ✅ Delivered | [`managed.py`](blackbox/managed.py) · `154,021 ≤ 280,000` |
-| **Offline replay & verification**: zero API calls, full cryptographic re-check | ✅ Delivered | `replay` CLI · [`dashboard.py`](blackbox/dashboard.py) |
-| **3D Digital Twin Repair**: closed-loop render → critique → patch → re-render → verify | ✅ Delivered | [`twin_repair/`](twin_repair/) · [§5](#5-twin-repair-addon) |
-| **Interactive web experiences**: Streamlit replay + 4-state Three.js twin app | ✅ Delivered | [`dashboard.py`](blackbox/dashboard.py) · [`twin_repair/web/`](twin_repair/web/) |
-| **Advisory simulation only** (`physical_safety_certified = False`) | ⚠️ By design | [§6](#6-explicit-limitations--safety-boundaries) |
+| **Swap the wires → the answer flips**: the AI reads the actual diagram, not just patterns | ✅ Delivered | [`fixture.py`](blackbox/fixture.py) · [§2](#2-core-technical-result) |
+| **Finds the hotspot**: localizes the overheating rack N4 (IoU ≥ 0.94) | ✅ Delivered | [`contracts.py`](blackbox/contracts.py) · [§4](#4-live-campaign-results) |
+| **Models the physics**: fits thermal parameters, simulates 19-point temperature trajectories | ✅ Delivered | [`domain.py`](blackbox/domain.py) · `RMSE = 3.1e-7 °C` |
+| **Independent verification**: a second AI in a separate sandbox checks all conclusions | ✅ Delivered | [`managed.py`](blackbox/managed.py) · [`agent_harness.py`](blackbox/agent_harness.py) |
+| **Tamper-proof**: SHA-256 hash chain locks every interaction (L1→L2→L3→L4) | ✅ Delivered | [`evidence.py`](blackbox/evidence.py) · [`campaign.py`](blackbox/campaign.py) |
+| **Budget-controlled**: 280K token ceiling enforced across the full audit | ✅ Delivered | [`managed.py`](blackbox/managed.py) · `154,021 ≤ 280,000` |
+| **Fully offline replay**: verify everything with zero API calls | ✅ Delivered | `replay` CLI · [`dashboard.py`](blackbox/dashboard.py) |
+| **3D Twin Repair**: render → AI critique → patch → re-render → physics verify | ✅ Delivered | [`twin_repair/`](twin_repair/) · [§5](#5-twin-repair-addon) |
+| **Interactive dashboards**: Streamlit replay + 3D Three.js twin app | ✅ Delivered | [`dashboard.py`](blackbox/dashboard.py) · [`twin_repair/web/`](twin_repair/web/) |
+| **Not certified for real operations** — advisory simulation only | ⚠️ By design | [§6](#6-explicit-limitations--safety-boundaries) |
 
 <details>
 <summary><strong>All specification documents</strong></summary>
@@ -77,9 +83,9 @@
 ---
 <!-- pdf-ignore-end -->
 
-# BlackboxDC — Counterfactual Visual & Electro-Thermal Causal Audit
+# BlackboxDC — Does Your AI Actually Read the Diagram?
 
-A deterministic benchmark and audit harness that evaluates whether **Gemini 4 Argon** managed agents (`antigravity-preview-09-2026`) can visually interpret electrical Single-Line Diagrams, reason about electro-thermal physics, and make safety-critical load migration decisions — with every claim cryptographically sealed and independently verifiable.
+A data center has a dangerous hotspot. An AI agent gets the wiring diagram, thermal images, and sensor data. It must find the fault, model the physics, and choose where to safely move the load. We then **swap two wires on the diagram** — the correct answer flips — and check if the AI still gets it right. A second agent in a separate sandbox verifies everything independently. Every step is cryptographically locked with SHA-256 hash chains and can be replayed offline.
 
 ## 1. Architecture & Phased Pipeline
 
@@ -140,7 +146,7 @@ Phase 07 · Twin Repair ──────── 3D render → visual critique �
 
 ## 2. Core Technical Result
 
-**With all evidence held byte-for-byte identical** (RGB imagery, thermal imagery, sensor telemetry), **a visual topology swap of N2/N3 feeder branches on the SLD reverses a safety-critical 8 A load-migration recommendation** — and a sandbox-isolated Auditor independently verifies the result.
+The key experiment: we create two identical data-center scenarios (**Case A** and **Case B**) — same thermal images, same sensor data, same hotspot on rack N4. The **only** difference is which feeders connect to which racks on the wiring diagram. This forces the safe load-migration target to flip from N3 to N2 (or vice versa). If the AI gets both right, it's actually reading the diagram topology — not guessing.
 
 | Dimension | Case A | Case B | Verification |
 |:---|:---|:---|:---|
@@ -202,9 +208,9 @@ python -m blackbox.campaign live-pair \
 | **Pair noncached tokens** | 154,021 ≤ 280,000 budget |
 | **Sandbox isolation** | 4 disjoint `environment_id` values verified |
 
-## 5. Twin Repair Addon — Closed-Loop 3D Digital Twin
+## 5. Twin Repair Addon — Can the AI Fix a Stale 3D Model?
 
-A second track adds an interactive 3D digital-twin repair loop on top of the `blackbox/` kernel:
+Real engineering drawings drift from reality over time — cables get moved, racks get rewired. This addon tests whether an AI agent can spot the difference between an outdated 3D model and the current wiring diagram, then **fix the model automatically**:
 
 1. **Builder Agent** (`gemini-4-argon`): Reconstructs `scene_spec.v1` from historical commissioning drawings in an isolated sandbox.
 2. **3D Renderer** (Three.js + headless Chromium): Renders `1280×800` wiring, RGB, and thermal views with graph-coupled feeder cables.
